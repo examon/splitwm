@@ -107,8 +107,8 @@ void keypress(XEvent *e)
 
 void buttonpress(XEvent *e)
 {
-	fprintf(stderr, "in buttonpress()\n");
 	unsigned int i;
+
 	for (i = 0; i < LENGTH(buttons); i++) {
 		if ((buttons[i].mask == e->xbutton.state) &&
 		    (buttons[i].button == e->xbutton.button) && buttons[i].func)
@@ -135,8 +135,8 @@ void mousemove(const Arg *arg)
 	} while (ev.type != ButtonRelease);
 
 	XUngrabPointer(dis, CurrentTime);
-	fprintf(stderr, "out mousemotion\n");
 
+	fprintf(stderr, "out mousemotion\n");
 }
 
 void quit(const Arg *arg)

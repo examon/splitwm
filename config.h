@@ -15,8 +15,8 @@ static Key keys[] = {
 /** mouse shortcuts **/
 static Button buttons[] = {
 	/* event mask        buttoon        function           argument */
-	{  MOD1,             Button1,       mousemove,         { .i = MOVE} },
-	{  MOD1,             Button3,       mousemove,         { .i = RESIZE} }
+	{  MOD1,             Button1,       mousemove,         { .i = MOVE }},
+	{  MOD1,             Button3,       mousemove,         { .i = RESIZE }}
 };
 
 #endif
