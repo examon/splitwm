@@ -1,11 +1,11 @@
-CFLAGS+= -Wall
+cflags+= -std=c99 -Wall -pedantic -Os
 LDFLAGS=-lX11
 EXEC=cleanwm
 
 PREFIX?= /usr
 BINDIR?= $(PREFIX)/bin
 
-CC=gcc
+CC=cc
 
 all: $(EXEC)
 

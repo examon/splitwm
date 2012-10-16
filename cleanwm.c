@@ -1,9 +1,12 @@
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/XF86keysym.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <err.h>
+#include <unistd.h>
+#include <X11/keysym.h>
+#include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 
 #define LENGTH(X)		(sizeof(X)/sizeof(X[0]))
 #define BUTTONMASK		ButtonPressMask|ButtonReleaseMask
@@ -40,6 +43,7 @@ static void keypress(XEvent *e);
 static void mousemove(const Arg *arg);
 static void run(void);
 static void setup(void);
+static void spawn(const Arg *arg);
 static void quit(const Arg *arg);
 
 /** Variables **/
@@ -99,7 +103,7 @@ void keypress(XEvent *e)
 	XKeyEvent *ke;
 
 	ke = &e->xkey;
-	keysym = XKeycodeToKeysym(dis, (KeyCode)ke->keycode, 0);
+	keysym = XkbKeycodeToKeysym(dis, (KeyCode)ke->keycode, 0, 0);
 	for (i = 0; i < LENGTH(keys); i++)
 		if (keysym == keys[i].keysym && keys[i].mod == ke->state && keys[i].func)
 			keys[i].func(&(keys[i].arg));
@@ -137,6 +141,17 @@ void mousemove(const Arg *arg)
 	XUngrabPointer(dis, CurrentTime);
 
 	fprintf(stderr, "out mousemotion\n");
+}
+
+void spawn(const Arg *arg)
+{
+	if (fork() == 0) {
+		if (dis)
+			close(ConnectionNumber(dis));
+		setsid();
+		execvp((char *)arg->com[0], (char **)arg->com);
+		err(EXIT_SUCCESS, "execvp %s", (char *)arg->com[0]);
+	}
 }
 
 void quit(const Arg *arg)
