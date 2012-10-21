@@ -34,33 +34,57 @@ typedef struct {
 	const Arg arg;
 } Button;
 
+typedef struct Client {
+	struct Client *next;
+	struct Client *prev;
+	Window win;
+} Client;
+
+/* UNUSED */
+typedef struct {
+	int master_size;
+	Client *head;
+	Client *curr;
+	Client *prev;
+} Desktop;
+
 /** Function prototypes **/
+static void addwindow(Window w);
 static void buttonpress(XEvent *e);
+static void destroynotify(XEvent *e);
 static void die(const char *errstr, ...);
 static void grabbuttons(void);
 static void grabkeys(void);
 static void keypress(XEvent *e);
+static void maprequest(XEvent *e);
 static void mousemove(const Arg *arg);
+static void printstatus(void);
 static void run(void);
 static void setup(void);
 static void spawn(const Arg *arg);
 static void quit(const Arg *arg);
 
-/** Variables **/
-static Display *dis;
-static Window root;
-static int screen;
-static Bool running = True;
-static int sh;
-static int sw;
-
-static void (*events[LASTEvent])(XEvent *e) = {
-	[KeyPress] = keypress,
-	[ButtonPress] = buttonpress
-};
-
 /** Include config **/
 #include "config.h"
+
+/** Variables **/
+static int sh;
+static int sw;
+static int screen;
+static int current_desktop_id;
+static Display *dis;
+static Window root;
+static Bool running = True;
+static Desktop desktops[DESKTOPS];	/* UNUSED */
+static Client *head_client;
+
+/** Event handlers **/
+static void (*events[LASTEvent])(XEvent *e) = {
+	[KeyPress]      = keypress,
+	[ButtonPress]   = buttonpress,
+	[MapRequest]    = maprequest,
+	[DestroyNotify] = destroynotify
+};
 
 /** Function definitions **/
 void die(const char *errstr, ...)
@@ -81,7 +105,6 @@ void grabbuttons(void)
 			    False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
 	}
 }
-
 
 void grabkeys(void)
 {
@@ -118,6 +141,92 @@ void buttonpress(XEvent *e)
 		    (buttons[i].button == e->xbutton.button) && buttons[i].func)
 			buttons[i].func(&(buttons[i].arg));
 	}
+}
+
+void printstatus(void)
+{
+	fprintf(stderr, "CLIENTS: ");
+	Client *c;
+
+	for (c = head_client; c; c = c->next)
+		fprintf(stderr, "C%s", ((c->next) ? (" ") : ("\n")));
+}
+
+void addwindow(Window w)
+{
+	fprintf(stderr, "addwindow()\n");
+
+	Client *c = NULL;
+	Client *n = NULL;
+
+	if (!(c = (Client *)calloc(1, sizeof(Client))))
+		die("error: client calloc error\n");
+
+	if (!head_client) {
+		c->win = w;
+		c->next = NULL;
+		c->prev = NULL;
+		head_client = c;			
+	} else {
+		c->win = w;
+		c->next = NULL;
+		for (n = head_client; n->next; n = n->next)
+			;
+		c->prev = n;
+		n->next = c;
+	}
+	printstatus();
+}
+
+void removewindow(Window w)
+{
+	fprintf(stderr, "removewindow()\n");
+
+	Client *c = NULL;
+
+	for (c = head_client; c; c = c->next) {
+		if (c->win == w) {
+			if (!c->next && !c->prev) {
+				fprintf(stderr, "head only window\n");
+				free(head_client);
+				head_client = NULL;
+				return;
+			} else if (!c->prev) {
+				fprintf(stderr, "head window\n");
+				head_client = c->next;
+				c->next->prev = NULL;
+			} else if (!c->next) {
+				fprintf(stderr, "last window\n");
+				c->prev->next = NULL;
+			} else {
+				fprintf(stderr, "mid window\n");
+				c->prev->next = c->next;
+				c->next->prev = c->prev;
+			}
+			free(c);
+			return;
+		}
+	}
+	printstatus();
+}
+
+void destroynotify(XEvent *e)
+{
+	fprintf(stderr, "destroynotify()\n");
+
+	removewindow(e->xdestroywindow.window);
+}
+
+void maprequest(XEvent *e)
+{
+	fprintf(stderr, "maprequest()\n");
+	
+	Window w = e->xmaprequest.window;
+
+	XMapWindow(dis, w);
+	addwindow(w);
+	
+	XMoveResizeWindow(dis, w, 0, 0, sw, sh);
 }
 
 void mousemove(const Arg *arg)
@@ -174,6 +283,14 @@ void setup(void)
 	grabkeys();
 	grabbuttons();
 
+	/* head & current client init */
+	head_client = NULL;
+
+	/* catch maprequests */
+	XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask);
+
+	/* default desktop */
+	current_desktop_id = 0;
 }
 
 void run(void)
