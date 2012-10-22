@@ -4,15 +4,16 @@
 #define CONFIG_H
 
 /** modifiers **/
-#define MOD1            Mod1Mask	/* ALT key */
-#define DESKTOPS	5		/* number of desktops */	
-#define NEW_IS_MASTER	True		/* new window is master */	/* UNUSED */
-#define BORDER_WIDTH	5		/* window border width */
-#define BORDER_OFFSET	10		/* spaces betweed windows borders */
+#define MOD1			Mod1Mask	/* ALT key */
+#define DESKTOPS		5		/* number of desktops */	
+#define NEW_IS_MASTER		True		/* new window is master */	/* UNUSED */
+#define BORDER_WIDTH		5		/* window border width */
+#define BORDER_OFFSET		10		/* spaces betweed windows borders */
+#define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels
 
 /** colors **/
-#define FOCUS_COLOR	"#00ff22"	/* focused window border color */
-#define UNFOCUS_COLOR	"#d2d2d2"	/* unfocused window border color */
+#define FOCUS_COLOR		"#00ff22"	/* focused window border color */
+#define UNFOCUS_COLOR		"#d2d2d2"	/* unfocused window border color */
 
 /** commands **/
 static const char *spawn_terminal[] = { "urxvt", NULL };

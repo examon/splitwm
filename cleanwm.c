@@ -10,7 +10,6 @@
 
 #define LENGTH(X)		(sizeof(X)/sizeof(X[0]))
 #define BUTTONMASK		ButtonPressMask|ButtonReleaseMask
-#define MAX(A, B)		(((A) > (B)) ? (A) : (B))
 
 enum { MOVE, RESIZE };
 
@@ -53,6 +52,7 @@ static void addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void destroynotify(XEvent *e);
 static void die(const char *errstr, ...);
+static void enternotify(XEvent *e);
 static void focuscurrent(void);
 static void fullscreen(const Arg *arg);
 static unsigned long getcolor(const char *color);
@@ -92,7 +92,8 @@ static void (*events[LASTEvent])(XEvent *e) = {
 	[KeyPress]      = keypress,
 	[ButtonPress]   = buttonpress,
 	[MapRequest]    = maprequest,
-	[DestroyNotify] = destroynotify
+	[DestroyNotify] = destroynotify,
+	[EnterNotify]	= enternotify
 };
 
 /** Function definitions **/
@@ -162,6 +163,21 @@ void buttonpress(XEvent *e)
 	}
 }
 
+void enternotify(XEvent *e)
+{
+	/* DBG */	fprintf(stderr, "enternotify()\n");
+	Client *c = NULL;
+	Window w = e->xcrossing.window;
+	
+	for (c = head_client; c; c = c->next)
+		if (c->win == w) {
+			current_client = c;
+			focuscurrent();
+	/* DBG */	printstatus();
+			return;
+		}
+}
+
 void printstatus(void)
 {
 	fprintf(stderr, "CLIENTS: ");
@@ -175,7 +191,7 @@ void printstatus(void)
 		}
 }
 
-/* REMAKE */
+/* REMAKE THIS */
 void killwindow(Window w)
 {
 	/* DBG */	fprintf(stderr, "killwindow()\n");
@@ -211,6 +227,7 @@ void addwindow(Window w)
 		n->next = c;
 	}
 	current_client = c;	/* new window is set to master */
+	XSelectInput(dis, current_client->win, EnterWindowMask);
 	focuscurrent();
 	/* DBG */	printstatus();
 }
@@ -297,7 +314,6 @@ void removewindow(Window w)
 void destroynotify(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "destroynotify()\n");
-
 	removewindow(e->xdestroywindow.window);
 }
 
@@ -313,22 +329,44 @@ void maprequest(XEvent *e)
 void mousemove(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "in mousemotion\n");
+	int c;
+	int rx, ry;
+	int xw, yh;
+	unsigned int v;
+	Window w;
 	XEvent ev;
+	XWindowAttributes wa;
 
+	if (!current_client || !XGetWindowAttributes(dis, current_client->win, &wa))
+		return;
+	if (arg->i == RESIZE)
+		XWarpPointer(dis, current_client->win, current_client->win,
+			     0, 0, 0, 0, --wa.width, --wa.height);	
+	if (!XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &v) || w != current_client->win)
+		return;
 	if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
 			 GrabModeAsync, None, None, CurrentTime) != GrabSuccess)
 		return;
 
-	int cnt = 0;
 	do {
-		XMaskEvent(dis, BUTTONMASK|PointerMotionMask, &ev);
+		XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
 		if (ev.type == MotionNotify) {
-			fprintf(stderr, "%s %d\n", ((arg->i == MOVE) ? "moving" : "resizing"), cnt++);
+			xw = ((arg->i == MOVE) ? wa.x : wa.width) + ev.xmotion.x - rx;
+			yh = ((arg->i == MOVE) ? wa.y : wa.height) + ev.xmotion.y - ry;
+			if (arg->i == RESIZE) {
+				XResizeWindow(dis, current_client->win,
+					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
+					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
+			} else if (arg->i == MOVE) {
+				XMoveWindow(dis, current_client->win, xw, yh);
+			}
+
+		} else if (ev.type == MapRequest) {
+			events[ev.type](&ev);
 		}
 	} while (ev.type != ButtonRelease);
 
 	XUngrabPointer(dis, CurrentTime);
-
 	/* DBG */	fprintf(stderr, "out mousemotion\n");
 }
 
