@@ -1,15 +1,14 @@
-/* see LICENSE for copyright and license */
-
 #ifndef CONFIG_H
 #define CONFIG_H
 
 /** modifiers **/
 #define MOD1			Mod1Mask	/* ALT key */
-#define DESKTOPS		5		/* number of desktops */	
+#define DESKTOPS		4		/* number of desktops */	
+#define DEFAULT_DESKTOP		0
 #define NEW_IS_MASTER		True		/* new window is master */	/* UNUSED */
 #define BORDER_WIDTH		5		/* window border width */
 #define BORDER_OFFSET		10		/* spaces betweed windows borders */
-#define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels
+#define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels */
 
 /** colors **/
 #define FOCUS_COLOR		"#00ff22"	/* focused window border color */
@@ -26,8 +25,16 @@ static Key keys[] = {
 	{  MOD1,             XK_Tab,        nextwindow,        { 0 }},
 	{  MOD1,             XK_x,          killcurrent,       { 0 }},
 	{  MOD1,             XK_f,          fullscreen,        { 0 }},
+	{  MOD1,             XK_u,          unmapcurrent,      { 0 }},
+	{  MOD1,             XK_m,          mapcurrent,        { 0 }},
+	{  MOD1,             XK_i,          status,            { 0 }},
 	{  MOD1,             XK_Return,     spawn,             { .com = spawn_terminal }},
-	{  MOD1,             XK_p,          spawn,             { .com = spawn_dmenu }}
+	{  MOD1,             XK_p,          spawn,             { .com = spawn_dmenu }},
+
+	{  MOD1,             XK_0,          change_desktop,    { .i = 0 }},
+	{  MOD1,             XK_1,          change_desktop,    { .i = 1 }},
+	{  MOD1,             XK_2,          change_desktop,    { .i = 2 }},
+	{  MOD1,             XK_3,          change_desktop,    { .i = 3 }}
 };
 
 /** mouse shortcuts **/
