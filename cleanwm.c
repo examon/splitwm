@@ -62,14 +62,12 @@ static void killwindow(Window w);
 static void maprequest(XEvent *e);
 static void mousemove(const Arg *arg);
 static void nextwindow(const Arg *arg);
+static void previous_desktop(const Arg *arg);
 static void printstatus(void);
 static void run(void);
 static void setup(void);
 static void spawn(const Arg *arg);
 static void quit(const Arg *arg);
-
-static void unmapcurrent(const Arg *arg);
-static void mapcurrent(const Arg *arg);
 static void status(const Arg* arg);
 
 
@@ -203,29 +201,14 @@ void printstatus(void)
 			continue;
 		}
 		
-		for ( c; c; c = c->next) {
+		for ( c; c; c = c->next)
 			if (c == d->curr && d->curr) {
-				fprintf(stderr, "M%s", ((c->next) ? (" ") : ("\n")));
+				fprintf(stderr, "M ");
 			} else {
-				fprintf(stderr, "C%s", ((c->next) ? (" ") : ("\n")));
+				fprintf(stderr, "C ");
 			}
-		}
 		fprintf(stderr, "\n");
 	}
-}
-
-void unmapcurrent(const Arg *arg)
-{
-	/* DBG */	fprintf(stderr, "unmapcurrent()\n");
-	Desktop *d = &desktops[current_desktop_id];
-	XUnmapWindow(dis, d->curr->win);
-}
-
-void mapcurrent(const Arg *arg)
-{
-	/* DBG */	fprintf(stderr, "mapcurrent()\n");
-	Desktop *d = &desktops[current_desktop_id];
-	XMapWindow(dis, d->curr->win);
 }
 
 /* REMAKE THIS */
@@ -271,6 +254,12 @@ void change_desktop(const Arg *arg)
 	previous_desktop_id = current_desktop_id;
 	current_desktop_id = arg->i;
 	/* DBG */	printstatus();
+}
+
+void previous_desktop(const Arg *arg)
+{
+	Arg a = { .i = previous_desktop_id };
+	change_desktop(&a);
 }
 
 void addwindow(Window w)

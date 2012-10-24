@@ -22,11 +22,10 @@ static const char *spawn_dmenu[]    = { "dmenu_run", NULL };
 static Key keys[] = {
 	/* modifier          key            function           argument */
 	{  MOD1,             XK_q,          quit,              { 0 }},
-	{  MOD1,             XK_Tab,        nextwindow,        { 0 }},
+	{  MOD1,             XK_j,          nextwindow,        { 0 }},
 	{  MOD1,             XK_x,          killcurrent,       { 0 }},
 	{  MOD1,             XK_f,          fullscreen,        { 0 }},
-	{  MOD1,             XK_u,          unmapcurrent,      { 0 }},
-	{  MOD1,             XK_m,          mapcurrent,        { 0 }},
+	{  MOD1,             XK_Tab,        previous_desktop,  { 0 }},
 	{  MOD1,             XK_i,          status,            { 0 }},
 	{  MOD1,             XK_Return,     spawn,             { .com = spawn_terminal }},
 	{  MOD1,             XK_p,          spawn,             { .com = spawn_dmenu }},
