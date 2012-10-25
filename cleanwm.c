@@ -67,9 +67,8 @@ static void printstatus(void);
 static void run(void);
 static void setup(void);
 static void spawn(const Arg *arg);
-static void quit(const Arg *arg);
 static void status(const Arg* arg);
-
+static void quit(const Arg *arg);
 
 /** Include config **/
 #include "config.h"
@@ -197,10 +196,10 @@ void printstatus(void)
 		Client *c = d->head;
 		
 		if (!c) {
-			fprintf(stderr, "X\n");
+			fprintf(stderr, ".\n");
 			continue;
 		}
-		
+
 		for ( c; c; c = c->next)
 			if (c == d->curr && d->curr) {
 				fprintf(stderr, "M ");
@@ -316,10 +315,10 @@ void fullscreen(const Arg *arg)
 	if (d->curr)
 		XMoveResizeWindow(dis,
 				  d->curr->win,
-				  BORDER_OFFSET,
-				  BORDER_OFFSET,
-			          sw - 2*BORDER_OFFSET - 2*BORDER_WIDTH,
-				  sh - 2*BORDER_OFFSET - 2*BORDER_WIDTH);
+				  0,
+				  0,
+			          sw - 2*BORDER_WIDTH,
+				  sh - 2*BORDER_WIDTH);
 }
 
 void focuscurrent(void)

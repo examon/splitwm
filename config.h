@@ -3,8 +3,8 @@
 
 /** modifiers **/
 #define MOD1			Mod1Mask	/* ALT key */
-#define DESKTOPS		4		/* number of desktops */	
-#define DEFAULT_DESKTOP		0
+#define DESKTOPS		10		/* number of desktops */	
+#define DEFAULT_DESKTOP		1
 #define NEW_IS_MASTER		True		/* new window is master */	/* UNUSED */
 #define BORDER_WIDTH		5		/* window border width */
 #define BORDER_OFFSET		10		/* spaces betweed windows borders */
@@ -33,7 +33,14 @@ static Key keys[] = {
 	{  MOD1,             XK_0,          change_desktop,    { .i = 0 }},
 	{  MOD1,             XK_1,          change_desktop,    { .i = 1 }},
 	{  MOD1,             XK_2,          change_desktop,    { .i = 2 }},
-	{  MOD1,             XK_3,          change_desktop,    { .i = 3 }}
+	{  MOD1,             XK_3,          change_desktop,    { .i = 3 }},
+	{  MOD1,             XK_4,          change_desktop,    { .i = 4 }},
+	{  MOD1,             XK_5,          change_desktop,    { .i = 5 }},
+	{  MOD1,             XK_6,          change_desktop,    { .i = 6 }},
+	{  MOD1,             XK_7,          change_desktop,    { .i = 7 }},
+	{  MOD1,             XK_8,          change_desktop,    { .i = 8 }},
+	{  MOD1,             XK_9,          change_desktop,    { .i = 9 }}
+
 };
 
 /** mouse shortcuts **/
