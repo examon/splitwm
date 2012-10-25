@@ -9,6 +9,8 @@
 #define BORDER_WIDTH		5		/* window border width */
 #define BORDER_OFFSET		10		/* spaces betweed windows borders */
 #define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels */
+#define W_SPLIT_COEFFICIENT	1.5		/* screen width split coefficient, 2 == 1/2 screen width */
+#define H_SPLIT_COEFFICIENT	1.5      	/* screen height split coefficient, 2 == 1/2 screen heigth */
 
 /** colors **/
 #define FOCUS_COLOR		"#00ff22"	/* focused window border color */

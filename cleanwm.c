@@ -313,12 +313,9 @@ void fullscreen(const Arg *arg)
 	Desktop *d = &desktops[current_desktop_id];
 	
 	if (d->curr)
-		XMoveResizeWindow(dis,
-				  d->curr->win,
-				  0,
-				  0,
-			          sw - 2*BORDER_WIDTH,
-				  sh - 2*BORDER_WIDTH);
+		XMoveResizeWindow(dis, d->curr->win, 0, 0,
+				  sw - 2 * BORDER_WIDTH,
+				  sh - 2 * BORDER_WIDTH);
 }
 
 void focuscurrent(void)
@@ -416,14 +413,23 @@ void mousemove(const Arg *arg)
 	do {
 		XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
 		if (ev.type == MotionNotify) {
+			fprintf(stderr, "\trx: %d\try: %d\n", rx, ry);
+
 			xw = ((arg->i == MOVE) ? wa.x : wa.width) + ev.xmotion.x - rx;
 			yh = ((arg->i == MOVE) ? wa.y : wa.height) + ev.xmotion.y - ry;
+			fprintf(stderr, "\txw: %d\tyh: %d\n", xw);
+			fprintf(stderr, "\twa.width: %d\twa.height: %d\n\n", wa.width, wa.height);
+
+			/* REMAKE */
 			if (arg->i == RESIZE) {
 				XResizeWindow(dis, d->curr->win,
 					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
 					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
-			} else if (arg->i == MOVE) {
-				XMoveWindow(dis, d->curr->win, xw, yh);
+			} else if (arg->i == MOVE &&
+				   xw + wa.width + 2 * BORDER_WIDTH < (sw / W_SPLIT_COEFFICIENT) &&
+			           yh + wa.height + 2 * BORDER_WIDTH < (sh / H_SPLIT_COEFFICIENT) &&
+				   xw > 0 && yh > 0) {
+					XMoveWindow(dis, d->curr->win, xw, yh);
 			}
 
 		} else if (ev.type == MapRequest) {
