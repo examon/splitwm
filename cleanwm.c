@@ -74,6 +74,7 @@ static void killcurrent(const Arg *arg);
 static void killwindow(Window w);
 static void maprequest(XEvent *e);
 static void maximize(Window w);
+static void maximize_current(const Arg *arg);
 static void mousemove(const Arg *arg);
 static void nextview(const Arg *arg);
 static void nextwindow(const Arg *arg);
@@ -414,16 +415,23 @@ void fullscreen(const Arg *arg)
 
 void maximize(Window w)
 {
-	int mid_space = 1;	/* REMAKE */
 	if (views[cv_id].curr_desk == LEFT) {
 		XMoveResizeWindow(dis, w, 0, 0,
-				  sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH - mid_space,
+				  sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH - SPLIT_SEPARATOR_WIDTH,
 				  sh / H_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH);
 	} else if (views[cv_id].curr_desk == RIGHT) {
-		XMoveResizeWindow(dis, w, sw / W_SPLIT_COEFFICIENT + mid_space, 0,
+		XMoveResizeWindow(dis, w, sw / W_SPLIT_COEFFICIENT + SPLIT_SEPARATOR_WIDTH, 0,
 				  sw  - sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH,
 				  sh - 2 * BORDER_WIDTH);
 	}
+}
+
+void maximize_current(const Arg *arg)
+{
+	if (views[cv_id].curr_desk == LEFT)
+		maximize(views[cv_id].ld[views[cv_id].curr_left_id].curr->win);
+	else
+		maximize(views[cv_id].rd[views[cv_id].curr_right_id].curr->win);
 }
 
 void focuscurrent(void)
@@ -435,6 +443,15 @@ void focuscurrent(void)
 
 	if (!(d = get_current_desktop()))
 		return;
+	if (!d->head)
+		if (views[cv_id].curr_desk == LEFT) {
+			if ((n = views[cv_id].rd[views[cv_id].curr_right_id].curr))
+				XSetWindowBorder(dis, n->win, right_win_unfocus);
+		} else {
+			if ((n = views[cv_id].ld[views[cv_id].curr_left_id].curr))
+				XSetWindowBorder(dis, n->win, left_win_unfocus);
+		}
+
 	for (c = d->head; c; c = c->next)
 		if (c == d->curr) {
 			XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);

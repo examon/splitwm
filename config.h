@@ -15,6 +15,7 @@
 #define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels */
 #define W_SPLIT_COEFFICIENT	2		/* screen width split coefficient, 2 == 1/2 screen width */
 #define H_SPLIT_COEFFICIENT	1        	/* screen height split coefficient, 2 == 1/2 screen heigth */
+#define SPLIT_SEPARATOR_WIDTH	0		/* width of the split seperator */
 
 /** colors **/
 #define FOCUS_COLOR		"#ff0000"	/* focused window border color (any desktop) */
@@ -33,6 +34,7 @@ static Key keys[] = {
 	{  MOD4,             XK_j,          nextview,               { 0 }},
 	{  MOD1,             XK_x,          killcurrent,            { 0 }},
 	{  MOD1,             XK_f,          fullscreen,             { 0 }},
+	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
 	{  MOD1,             XK_i,          status,                 { 0 }},
 	{  MOD1,             XK_Return,     spawn,                  { .com = spawn_terminal }},
