@@ -55,14 +55,23 @@ typedef struct {
 	int curr_desk;		/* current view, LEFT/RIGHT */
 } View;
 
+typedef struct {
+	GC gc;
+	XColor color;
+	Colormap colormap;
+	Drawable drawable;
+} Separator;
+
 /** Function prototypes **/
 static void addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_left_desktop(const Arg *arg);
 static void change_right_desktop(const Arg *arg);
 static void destroynotify(XEvent *e);
+static void draw_separator(void);
 static void die(const char *errstr, ...);
 static void enternotify(XEvent *e);
+static void expose(XEvent *e);
 static void focuscurrent(void);
 static void fullscreen(const Arg *arg);
 static unsigned long getcolor(const char *color);
@@ -78,6 +87,7 @@ static void maximize_current(const Arg *arg);
 static void mousemove(const Arg *arg);
 static void nextview(const Arg *arg);
 static void nextwindow(const Arg *arg);
+static void prepare_separator(void);
 static void previous_desktop(const Arg *arg);
 static void printstatus(void);
 static void run(void);
@@ -104,7 +114,9 @@ static Window root;
 static Bool running = True;
 static Client *head_client;
 static Client *current_client;
+static Separator separator;
 static View views[VIEWS];
+static unsigned long draws;
 
 /** Event handlers **/
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -112,7 +124,8 @@ static void (*events[LASTEvent])(XEvent *e) = {
 	[ButtonPress]   = buttonpress,
 	[MapRequest]    = maprequest,
 	[DestroyNotify] = destroynotify,
-	[EnterNotify]	= enternotify
+	[EnterNotify]	= enternotify,
+	[Expose]	= expose
 };
 
 /** Function definitions **/
@@ -161,6 +174,8 @@ void keypress(XEvent *e)
 	KeySym keysym;
 	XKeyEvent *ke;
 
+	draw_separator();
+
 	ke = &e->xkey;
 	keysym = XkbKeycodeToKeysym(dis, (KeyCode)ke->keycode, 0, 0);
 	for (i = 0; i < LENGTH(keys); i++)
@@ -194,6 +209,12 @@ void enternotify(XEvent *e)
 			focuscurrent();
 			return;
 		}
+}
+
+void expose(XEvent *e)
+{
+	if (e->xexpose.count == 0)
+		draw_separator();
 }
 
 Desktop *get_current_desktop(void)
@@ -413,16 +434,41 @@ void fullscreen(const Arg *arg)
 				  sh - 2 * BORDER_WIDTH);
 }
 
+void prepare_separator(void)
+{
+	separator.colormap = DefaultColormap(dis, 0);
+	separator.gc = XCreateGC(dis, root, 0, 0);
+	XParseColor(dis, separator.colormap, SEPARATOR_COLOR, &separator.color);
+	XAllocColor(dis, separator.colormap, &separator.color);
+	XSetForeground(dis, separator.gc, separator.color.pixel);
+}
+
+/* REMAKE THIS + ALL CALLS */
+void draw_separator(void)
+{
+	XFillRectangle(dis, root, separator.gc, sw / W_SPLIT_COEFFICIENT \
+		       - SPLIT_SEPARATOR_WIDTH / 2, 0, SPLIT_SEPARATOR_WIDTH, sh);
+	/* DBG */	fprintf(stderr, "draws: %ld\n", ++draws);
+}
+
 void maximize(Window w)
 {
 	if (views[cv_id].curr_desk == LEFT) {
-		XMoveResizeWindow(dis, w, 0, 0,
-				  sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH - SPLIT_SEPARATOR_WIDTH,
-				  sh / H_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH);
+		XMoveResizeWindow(dis, w,
+				  BORDER_OFFSET,
+				  BORDER_OFFSET,
+				  sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH \
+				  - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
+				  sh / H_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH \
+				  - 2 * BORDER_OFFSET);
 	} else if (views[cv_id].curr_desk == RIGHT) {
-		XMoveResizeWindow(dis, w, sw / W_SPLIT_COEFFICIENT + SPLIT_SEPARATOR_WIDTH, 0,
-				  sw  - sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH,
-				  sh - 2 * BORDER_WIDTH);
+		XMoveResizeWindow(dis, w,
+				  sw / W_SPLIT_COEFFICIENT + BORDER_OFFSET \
+				  + SPLIT_SEPARATOR_WIDTH / 2,
+				  BORDER_OFFSET,
+				  sw  - sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH \
+				  - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
+				  sh - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
 	}
 }
 
@@ -568,6 +614,8 @@ void mousemove(const Arg *arg)
 			 GrabModeAsync, None, None, CurrentTime) != GrabSuccess)
 		return;
 
+	draw_separator();
+
 	do {
 		XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
 		if (ev.type == MotionNotify) {
@@ -583,14 +631,15 @@ void mousemove(const Arg *arg)
 					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
 					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
 			} else if (arg->i == MOVE && views[cv_id].curr_desk == LEFT &&
-				   xw + wa.width + 2 * BORDER_WIDTH < (sw / W_SPLIT_COEFFICIENT) &&
+				   xw + wa.width + 2 * BORDER_WIDTH < \
+				   (sw / W_SPLIT_COEFFICIENT - SPLIT_SEPARATOR_WIDTH / 2) &&
 				   xw > 0 &&
 			           yh + wa.height + 2 * BORDER_WIDTH < (sh / H_SPLIT_COEFFICIENT) &&
 				   yh > 0) {
 	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE LEFT\n");
 					XMoveWindow(dis, d->curr->win, xw, yh);
 			} else if (arg->i == MOVE && views[cv_id].curr_desk == RIGHT &&
-				   xw > (sw / W_SPLIT_COEFFICIENT) &&
+				   xw > (sw / W_SPLIT_COEFFICIENT + SPLIT_SEPARATOR_WIDTH / 2) &&
 				   xw + wa.width + 2 * BORDER_WIDTH < sw &&
 				   yh + wa.height + 2 * BORDER_WIDTH < sh &&
 				   yh > 0) {
@@ -603,6 +652,7 @@ void mousemove(const Arg *arg)
 	} while (ev.type != ButtonRelease);
 
 	XUngrabPointer(dis, CurrentTime);
+	draw_separator();
 	/* DBG */	fprintf(stderr, "out mousemotion\n");
 }
 
@@ -637,6 +687,11 @@ void setup(void)
 	/* grab keys & buttons */
 	grabkeys();
 	grabbuttons();
+
+	/* prepare & draw separator */
+	draws = 0;
+	prepare_separator();
+	draw_separator();
 
 	/* set window border colors */
 	win_focus = getcolor(FOCUS_COLOR);

@@ -10,17 +10,18 @@
 #define VIEWS			10		/* number of views */
 #define DEFAULT_VIEW		1		/* default view */
 #define DEFAULT_FOCUSED_VIEW	LEFT		/* LEFT/RIGHT */
-#define BORDER_WIDTH		5		/* window border width */
-#define BORDER_OFFSET		10		/* spaces betweed windows borders */
+#define BORDER_WIDTH		4		/* window border width */
+#define BORDER_OFFSET		4		/* spaces betweed windows borders */
 #define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels */
 #define W_SPLIT_COEFFICIENT	2		/* screen width split coefficient, 2 == 1/2 screen width */
 #define H_SPLIT_COEFFICIENT	1        	/* screen height split coefficient, 2 == 1/2 screen heigth */
-#define SPLIT_SEPARATOR_WIDTH	0		/* width of the split seperator */
+#define SPLIT_SEPARATOR_WIDTH	4		/* width of the split seperator */
 
 /** colors **/
-#define FOCUS_COLOR		"#ff0000"	/* focused window border color (any desktop) */
-#define LEFT_UNFOCUS_COLOR	"#8ab3d5"	/* unfocused window border color (left desktop) */
-#define RIGHT_UNFOCUS_COLOR	"#76d27b"	/* unfocused window border color (right desktop) */
+#define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
+#define LEFT_UNFOCUS_COLOR	"#55ff55"	/* unfocused window border color (left desktop) */
+#define RIGHT_UNFOCUS_COLOR	"#ffff55"	/* unfocused window border color (right desktop) */
+#define SEPARATOR_COLOR		"#ff0000"	/* screen separator color */
 
 /** commands **/
 static const char *spawn_terminal[] = { "urxvt", NULL };
