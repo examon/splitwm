@@ -1,9 +1,12 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-/** modifiers **/
-#define MOD1			Mod1Mask	/* ALT key */
-#define MOD4			Mod4Mask	/* Super/Win key */
+/** Modifiers **/
+#define MOD1		Mod1Mask	/* ALT key */
+#define MOD4		Mod4Mask	/* Super/Win key */
+#define SHIFT		ShiftMask	/* Shift key */
+
+/** Settings **/
 #define DESKTOPS		10		/* number of desktops */	
 #define DEFAULT_LEFT_DESKTOP	1		/* defualt left desktop */
 #define DEFAULT_RIGHT_DESKTOP	1		/* defualt right desktop */
@@ -12,22 +15,25 @@
 #define DEFAULT_FOCUSED_VIEW	LEFT		/* LEFT/RIGHT */
 #define BORDER_WIDTH		4		/* window border width */
 #define BORDER_OFFSET		4		/* spaces betweed windows borders */
+#define MASTER_SIZE		400		/* master window size */
 #define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels */
-#define W_SPLIT_COEFFICIENT	2		/* screen width split coefficient, 2 == 1/2 screen width */
-#define H_SPLIT_COEFFICIENT	1        	/* screen height split coefficient, 2 == 1/2 screen heigth */
 #define SPLIT_SEPARATOR_WIDTH	4		/* width of the split seperator */
+#define DEFAULT_WIDTH_SPLIT_COEFFICIENT	  2	/* screen width split coefficient, 2 == 1/2 screen width */
+#define DEFAULT_HEIGHT_SPLIT_COEFFICIENT  1    	/* screen height split coefficient, 2 == 1/2 screen heigth */
+#define SEPARATOR_INCREASE	10		/* separator increase motion distance */
+#define SEPARATOR_DECREASE	10		/* separator decrease motion distance */
 
-/** colors **/
+/** Colors **/
 #define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
 #define LEFT_UNFOCUS_COLOR	"#55ff55"	/* unfocused window border color (left desktop) */
 #define RIGHT_UNFOCUS_COLOR	"#ffff55"	/* unfocused window border color (right desktop) */
 #define SEPARATOR_COLOR		"#ff0000"	/* screen separator color */
 
-/** commands **/
+/** Commands **/
 static const char *spawn_terminal[] = { "urxvt", NULL };
 static const char *spawn_dmenu[]    = { "dmenu_run", NULL };
 
-/** keyboard shortcuts **/
+/** Keyboard shortcuts **/
 static Key keys[] = {
 	/* modifier          key            function                argument */
 	{  MOD1,             XK_q,          quit,                   { 0 }},
@@ -38,6 +44,10 @@ static Key keys[] = {
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
 	{  MOD1,             XK_i,          status,                 { 0 }},
+	//{  MOD1,             XK_t,          tile,                   { 0 }},
+	{  MOD1|SHIFT,	     XK_h,	    separator_decrease,	    { 0 }},
+	{  MOD1|SHIFT,	     XK_l,	    separator_increase,     { 0 }},
+
 	{  MOD1,             XK_Return,     spawn,                  { .com = spawn_terminal }},
 	{  MOD1,             XK_p,          spawn,                  { .com = spawn_dmenu }},
 
@@ -65,7 +75,7 @@ static Key keys[] = {
 
 };
 
-/** mouse shortcuts **/
+/** Mouse shortcuts **/
 static Button buttons[] = {
 	/* event mask        buttoon        function           argument */
 	{  MOD1,             Button1,       mousemove,         { .i = MOVE }},

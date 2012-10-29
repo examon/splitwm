@@ -43,6 +43,7 @@ typedef struct Client {
 typedef struct {
 	Client *head;
 	Client *curr;
+	int master_size;
 } Desktop;
 
 typedef struct {
@@ -91,10 +92,12 @@ static void prepare_separator(void);
 static void previous_desktop(const Arg *arg);
 static void printstatus(void);
 static void run(void);
+static void separator_increase(const Arg *arg);
+static void separator_decrease(const Arg *arg);
 static void setup(void);
 static void spawn(const Arg *arg);
 static void status(const Arg* arg);
-static void tile(void);
+static void tile(Desktop *d);
 static void quit(const Arg *arg);
 
 /** Include config **/
@@ -104,11 +107,14 @@ static void quit(const Arg *arg);
 static int sh;
 static int sw;
 static int screen;
-static int cv_id;	/* current view ID */
-static int pv_id;	/* previous view ID */
+static int cv_id;		/* current view ID */
+static int pv_id;		/* previous view ID */
 static unsigned int win_focus;
 static unsigned int left_win_unfocus;
 static unsigned int right_win_unfocus;
+static float split_width_x;
+static float split_height_y;
+static unsigned long draws;
 static Display *dis;
 static Window root;
 static Bool running = True;
@@ -116,7 +122,6 @@ static Client *head_client;
 static Client *current_client;
 static Separator separator;
 static View views[VIEWS];
-static unsigned long draws;
 
 /** Event handlers **/
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -446,9 +451,47 @@ void prepare_separator(void)
 /* REMAKE THIS + ALL CALLS */
 void draw_separator(void)
 {
-	XFillRectangle(dis, root, separator.gc, sw / W_SPLIT_COEFFICIENT \
-		       - SPLIT_SEPARATOR_WIDTH / 2, 0, SPLIT_SEPARATOR_WIDTH, sh);
+	XFillRectangle(dis, root, separator.gc,
+			split_width_x - SPLIT_SEPARATOR_WIDTH / 2,
+			0,
+			SPLIT_SEPARATOR_WIDTH,
+			sh);
 	/* DBG */	fprintf(stderr, "draws: %ld\n", ++draws);
+}
+
+/* REMAKE */
+void separator_increase(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "separator_increase()\n");
+	if (split_width_x >= 0  && split_width_x < sw) {
+		split_width_x += SEPARATOR_INCREASE;
+	}
+	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
+	draw_separator();
+	if (views[cv_id].curr_desk == LEFT)
+		views[cv_id].curr_desk = RIGHT;
+	views[cv_id].rd[views[cv_id].curr_right_id].master_size -= 10;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	views[cv_id].curr_desk = LEFT;
+	views[cv_id].ld[views[cv_id].curr_left_id].master_size += 10;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+}
+
+/* REMAKE */
+void separator_decrease(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "separator_decrease()\n");
+	if (split_width_x >= 0 && split_width_x <= sw)
+		split_width_x -= SEPARATOR_DECREASE;
+	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
+	draw_separator();
+	if (views[cv_id].curr_desk == RIGHT)
+		views[cv_id].curr_desk = LEFT;
+	views[cv_id].ld[views[cv_id].curr_left_id].master_size -= 10;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	views[cv_id].curr_desk = RIGHT;
+	views[cv_id].rd[views[cv_id].curr_right_id].master_size += 10;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 }
 
 void maximize(Window w)
@@ -457,18 +500,15 @@ void maximize(Window w)
 		XMoveResizeWindow(dis, w,
 				  BORDER_OFFSET,
 				  BORDER_OFFSET,
-				  sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH \
-				  - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
-				  sh / H_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH \
-				  - 2 * BORDER_OFFSET);
+				  split_width_x - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
+				  split_height_y - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
 	} else if (views[cv_id].curr_desk == RIGHT) {
 		XMoveResizeWindow(dis, w,
-				  sw / W_SPLIT_COEFFICIENT + BORDER_OFFSET \
-				  + SPLIT_SEPARATOR_WIDTH / 2,
+				  split_width_x + BORDER_OFFSET + SPLIT_SEPARATOR_WIDTH / 2,
 				  BORDER_OFFSET,
-				  sw  - sw / W_SPLIT_COEFFICIENT - 2 * BORDER_WIDTH \
+				  sw  - split_width_x - 2 * BORDER_WIDTH \
 				  - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
-				  sh - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
+				  split_height_y - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
 	}
 }
 
@@ -573,14 +613,64 @@ void maprequest(XEvent *e)
 	Window w = e->xmaprequest.window;
 
 	XMapWindow(dis, w);
-	maximize(w);
 	addwindow(w);
+	if (views[cv_id].curr_desk == LEFT)
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	else
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 }
 
 /* IMPLEMENT LATER */
-void tile(void)
+void tile(Desktop *d)
 {
-	return;
+	/* DBG */	fprintf(stderr, "tile()\n");
+	Client *c = NULL;
+	int n = 0;
+	int y = 0;
+
+	if (d->head && !d->head->next) {
+		maximize(d->head->win);
+	} else if (d->head && views[cv_id].curr_desk == LEFT) {
+		XMoveResizeWindow(dis, d->curr->win,
+				  BORDER_OFFSET,
+				  BORDER_OFFSET,
+				  d->master_size - 2 * BORDER_OFFSET - 2 * BORDER_WIDTH,
+				  split_height_y - 2 * BORDER_OFFSET - 2 * BORDER_WIDTH);
+		for (c = d->head; c; c = c->next)
+			if (!(c == d->curr))
+				++n;
+		for (c = d->head; c; c = c->next) {
+			if (c == d->curr)
+				continue;
+			XMoveResizeWindow(dis, c->win,
+					  d->master_size,
+					  y + BORDER_OFFSET,
+					  split_width_x - d->master_size - BORDER_OFFSET \
+					  - 2 * BORDER_WIDTH - SPLIT_SEPARATOR_WIDTH / 2,
+					  split_height_y / n - 2 * BORDER_OFFSET - 2 * BORDER_WIDTH);
+			y += sh / n;
+		}	
+	} else if (d->head && views[cv_id].curr_desk == RIGHT) {
+		XMoveResizeWindow(dis, d->curr->win,
+				  split_width_x + BORDER_OFFSET + SPLIT_SEPARATOR_WIDTH / 2,
+				  BORDER_OFFSET,
+				  d->master_size - 2 * BORDER_OFFSET - 2 * BORDER_WIDTH,
+				  split_height_y - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
+		for (c = d->head; c; c = c->next)
+			if (!(c == d->curr))
+				++n;
+		for (c = d->head; c; c = c->next) {
+			if (c == d->curr)
+				continue;
+			XMoveResizeWindow(dis, c->win,
+					  split_width_x + d->master_size + SPLIT_SEPARATOR_WIDTH / 2,
+					  y + BORDER_OFFSET,
+					  sw - split_width_x - d->master_size - 2 * BORDER_WIDTH \
+					  - BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
+					  split_height_y / n - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
+			y += sh / n;
+		}	
+	}
 }
 
 void mousemove(const Arg *arg)
@@ -595,14 +685,8 @@ void mousemove(const Arg *arg)
 	XWindowAttributes wa;
 	Desktop *d = NULL;
 
-	if (views[cv_id].curr_desk == LEFT) {
-		d = &views[cv_id].ld[views[cv_id].curr_left_id];
-	} else if (views[cv_id].curr_desk == RIGHT) {
-		d = &views[cv_id].rd[views[cv_id].curr_right_id];
-	} else {
+	if (!(d = get_current_desktop()))
 		return;
-	}
-
 	if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa))
 		return;
 	if (arg->i == RESIZE)
@@ -631,15 +715,14 @@ void mousemove(const Arg *arg)
 					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
 					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
 			} else if (arg->i == MOVE && views[cv_id].curr_desk == LEFT &&
-				   xw + wa.width + 2 * BORDER_WIDTH < \
-				   (sw / W_SPLIT_COEFFICIENT - SPLIT_SEPARATOR_WIDTH / 2) &&
+				   xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2 &&
 				   xw > 0 &&
-			           yh + wa.height + 2 * BORDER_WIDTH < (sh / H_SPLIT_COEFFICIENT) &&
+			           yh + wa.height + 2 * BORDER_WIDTH < split_height_y &&
 				   yh > 0) {
 	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE LEFT\n");
 					XMoveWindow(dis, d->curr->win, xw, yh);
 			} else if (arg->i == MOVE && views[cv_id].curr_desk == RIGHT &&
-				   xw > (sw / W_SPLIT_COEFFICIENT + SPLIT_SEPARATOR_WIDTH / 2) &&
+				   xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2 &&
 				   xw + wa.width + 2 * BORDER_WIDTH < sw &&
 				   yh + wa.height + 2 * BORDER_WIDTH < sh &&
 				   yh > 0) {
@@ -688,6 +771,10 @@ void setup(void)
 	grabkeys();
 	grabbuttons();
 
+	/* setup width & heigh split coefficients */
+	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
+	split_height_y = sh / DEFAULT_HEIGHT_SPLIT_COEFFICIENT;
+
 	/* prepare & draw separator */
 	draws = 0;
 	prepare_separator();
@@ -714,8 +801,10 @@ void setup(void)
 	for (i = 0; i < DESKTOPS; i++) {
 		views[cv_id].ld[i].head = NULL;
 		views[cv_id].ld[i].curr = NULL;
+		views[cv_id].ld[i].master_size = MASTER_SIZE;
 		views[cv_id].rd[i].head = NULL;
 		views[cv_id].rd[i].curr = NULL;
+		views[cv_id].rd[i].master_size = MASTER_SIZE;
 	}
 
 	/* change to default desktop */
