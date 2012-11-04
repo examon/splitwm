@@ -16,12 +16,12 @@
 #define BORDER_WIDTH		4		/* window border width */
 #define BORDER_OFFSET		4		/* spaces betweed windows borders */
 #define MASTER_SIZE		400		/* master window size */
-#define MIN_WINDOW_SIZE 	50		/* minimum window size in pixels */
+#define MIN_WINDOW_SIZE 	10		/* minimum window size in pixels */
 #define SPLIT_SEPARATOR_WIDTH	4		/* width of the split seperator */
 #define DEFAULT_WIDTH_SPLIT_COEFFICIENT	  2	/* screen width split coefficient, 2 == 1/2 screen width */
 #define DEFAULT_HEIGHT_SPLIT_COEFFICIENT  1    	/* screen height split coefficient, 2 == 1/2 screen heigth */
-#define SEPARATOR_INCREASE	10		/* separator increase motion distance */
-#define SEPARATOR_DECREASE	10		/* separator decrease motion distance */
+#define SEPARATOR_INCREASE	100		/* separator increase motion distance */
+#define SEPARATOR_DECREASE	100		/* separator decrease motion distance */
 
 /** Colors **/
 #define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
@@ -39,7 +39,8 @@ static Key keys[] = {
 	{  MOD1,             XK_q,          quit,                   { 0 }},
 	{  MOD1,             XK_j,          nextwindow,             { 0 }},
 	{  MOD4,             XK_j,          nextview,               { 0 }},
-	{  MOD1,             XK_x,          killcurrent,            { 0 }},
+	//{  MOD1,             XK_x,          killcurrent,            { 0 }},
+	{  MOD1,             XK_x,          kill_client,            { 0 }},
 	{  MOD1,             XK_f,          fullscreen,             { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},

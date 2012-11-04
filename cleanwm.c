@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <unistd.h>
 #include <err.h>
 #include <unistd.h>
@@ -68,11 +69,11 @@ static void addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_left_desktop(const Arg *arg);
 static void change_right_desktop(const Arg *arg);
+static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void draw_separator(void);
 static void die(const char *errstr, ...);
 static void enternotify(XEvent *e);
-static void expose(XEvent *e);
 static void focuscurrent(void);
 static void fullscreen(const Arg *arg);
 static unsigned long getcolor(const char *color);
@@ -81,6 +82,7 @@ static void grabbuttons(void);
 static void grabkeys(void);
 static void keypress(XEvent *e);
 static void killcurrent(const Arg *arg);
+static void kill_client(const Arg *arg);
 static void killwindow(Window w);
 static void maprequest(XEvent *e);
 static void maximize(Window w);
@@ -92,9 +94,11 @@ static void prepare_separator(void);
 static void previous_desktop(const Arg *arg);
 static void printstatus(void);
 static void run(void);
+static void send_kill_signal(Window w);
 static void separator_increase(const Arg *arg);
 static void separator_decrease(const Arg *arg);
 static void setup(void);
+static void sigchld(int sig);
 static void spawn(const Arg *arg);
 static void status(const Arg* arg);
 static void tile(Desktop *d);
@@ -118,19 +122,17 @@ static unsigned long draws;
 static Display *dis;
 static Window root;
 static Bool running = True;
-static Client *head_client;
-static Client *current_client;
 static Separator separator;
 static View views[VIEWS];
 
 /** Event handlers **/
 static void (*events[LASTEvent])(XEvent *e) = {
-	[KeyPress]      = keypress,
-	[ButtonPress]   = buttonpress,
-	[MapRequest]    = maprequest,
-	[DestroyNotify] = destroynotify,
-	[EnterNotify]	= enternotify,
-	[Expose]	= expose
+	[ButtonPress]      = buttonpress,
+	[ConfigureRequest] = configurerequest,
+	[DestroyNotify]    = destroynotify,
+	[EnterNotify]	   = enternotify,
+	[KeyPress]         = keypress,
+	[MapRequest]       = maprequest
 };
 
 /** Function definitions **/
@@ -201,7 +203,7 @@ void buttonpress(XEvent *e)
 
 void enternotify(XEvent *e)
 {
-	/* DBG */	fprintf(stderr, "enternotify()\n");
+	/* DBG */	fprintf(stderr, "enternotify(): IN\n");
 	Client *c = NULL;
 	Desktop *d = NULL;
 	Window w = e->xcrossing.window;
@@ -214,12 +216,7 @@ void enternotify(XEvent *e)
 			focuscurrent();
 			return;
 		}
-}
-
-void expose(XEvent *e)
-{
-	if (e->xexpose.count == 0)
-		draw_separator();
+	/* DBG */	fprintf(stderr, "enternotify(): OUT\n");
 }
 
 Desktop *get_current_desktop(void)
@@ -285,24 +282,62 @@ void printstatus(void)
 /* REMAKE THIS */
 void killwindow(Window w)
 {
-	/* DBG */	fprintf(stderr, "killwindow()\n");
+	/* DBG */	fprintf(stderr, "killwindow(): IN\n");
 	XKillClient(dis, w);
 	/* DBG */	//printstatus();
+	/* DBG */	fprintf(stderr, "killwindow(): OUT\n");
+}
+
+void kill_client(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "kill_client(): IN\n");
+	Desktop *d = NULL;
+
+	if (!(d = get_current_desktop()))
+		return;
+	if (d->curr) {
+		XEvent e;
+		e.type = ClientMessage;
+		e.xclient.window = d->curr->win;
+		e.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
+		e.xclient.format = 32;
+		e.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
+		e.xclient.data.l[1] = CurrentTime;
+		XSendEvent(dis, d->curr->win, False, NoEventMask, &e);
+		send_kill_signal(d->curr->win);
+	}
+	/* DBG */	fprintf(stderr, "kill_client(): OUT\n");
+}
+
+void send_kill_signal(Window w)
+{
+	/* DBG */	fprintf(stderr, "send_kill_signal(): IN\n");
+	XEvent e;
+	e.type = ClientMessage;
+	e.xclient.window = w;
+	e.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
+	e.xclient.format = 32;
+	e.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
+	e.xclient.data.l[1] = CurrentTime;
+	XSendEvent(dis, w, False, NoEventMask, &e);
+	/* DBG */	fprintf(stderr, "send_kill_signal(): OUT\n");
 }
 
 void killcurrent(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "killcurrent()\n");
+	/* DBG */	fprintf(stderr, "killcurrent(): IN\n");
 	Desktop *d = NULL;
 
 	if (!(d = get_current_desktop()))
 		return;
 	if (d->curr)
 		killwindow(d->curr->win);
+	/* DBG */	fprintf(stderr, "killcurrent(): OUT\n");
 }
 
 void change_left_desktop(const Arg *arg)
 {
+	/* DBG */	fprintf(stderr, "change_left_desktop(): IN\n");
 	/* DBG */	fprintf(stderr, "change_left_desktop(): %d -> %d\n", views[cv_id].curr_left_id, arg->i);
 	/* DBG */	//printstatus();
 	Client *c;
@@ -325,11 +360,13 @@ void change_left_desktop(const Arg *arg)
 
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
+	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
 	/* DBG */	printstatus();
 }
 
 void change_right_desktop(const Arg *arg)
 {
+	/* DBG */	fprintf(stderr, "change_right_desktop(): IN\n");
 	/* DBG */	fprintf(stderr, "change_right_desktop(): %d -> %d\n", views[cv_id].curr_right_id, arg->i);
 	/* DBG */	//printstatus();
 	Client *c;
@@ -352,12 +389,14 @@ void change_right_desktop(const Arg *arg)
 
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
+	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
 	/* DBG */	printstatus();
 }
 
 
 void previous_desktop(const Arg *arg)
 {
+	/* DBG */	fprintf(stderr, "previous_desktop(): IN\n");
 	if (views[cv_id].curr_desk == LEFT) {
 		Arg a = { .i = views[cv_id].prev_left_id };
 		change_left_desktop(&a);
@@ -365,11 +404,12 @@ void previous_desktop(const Arg *arg)
 		Arg a = { .i = views[cv_id].prev_right_id };
 		change_right_desktop(&a);
 	}
+	/* DBG */	fprintf(stderr, "previous_desktop(): OUT\n");
 }
 
 void addwindow(Window w)
 {
-	/* DBG */	fprintf(stderr, "addwindow()\n");
+	/* DBG */	fprintf(stderr, "addwindow(): IN\n");
 	Client *c = NULL;
 	Client *n = NULL;
 	Desktop *d = NULL;
@@ -394,12 +434,13 @@ void addwindow(Window w)
 	d->curr = c;	/* new client is set to master */
 	XSelectInput(dis, d->curr->win, EnterWindowMask);
 	focuscurrent();
-	/* DBG */	//printstatus();
+	/* DBG */	fprintf(stderr, "addwindow(): OUT\n");
+	/* DBG */	printstatus();
 }
 
 void nextwindow(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "nextwindow()\n");
+	/* DBG */	fprintf(stderr, "nextwindow(): IN\n");
 	Client *c = NULL;
 	Desktop *d = NULL;
 
@@ -412,23 +453,25 @@ void nextwindow(const Arg *arg)
 			d->curr = d->head;
 		}
 	focuscurrent();
+	/* DBG */	fprintf(stderr, "nextwindow(): OUT\n");
 	/* DBG */	//printstatus();
 }
 
 void nextview(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "nextview()\n");
+	/* DBG */	fprintf(stderr, "nextview(): IN\n");
 	if (views[cv_id].curr_desk == LEFT) {
 		views[cv_id].curr_desk = RIGHT;
 	} else {
 		views[cv_id].curr_desk = LEFT;
 	}
 	focuscurrent();
+	/* DBG */	fprintf(stderr, "nextview(): OUT\n");
 }
 
 void fullscreen(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "fullscreen()\n");
+	/* DBG */	fprintf(stderr, "fullscreen(): IN\n");
 	Desktop *d = NULL;
 
 	if (!(d = get_current_desktop()))
@@ -437,33 +480,37 @@ void fullscreen(const Arg *arg)
 		XMoveResizeWindow(dis, d->curr->win, 0, 0,
 				  sw - 2 * BORDER_WIDTH,
 				  sh - 2 * BORDER_WIDTH);
+	/* DBG */	fprintf(stderr, "fullscreen(): OUT\n");
 }
 
 void prepare_separator(void)
 {
+	/* DBG */	fprintf(stderr, "prepare_separator(): IN\n");
 	separator.colormap = DefaultColormap(dis, 0);
 	separator.gc = XCreateGC(dis, root, 0, 0);
 	XParseColor(dis, separator.colormap, SEPARATOR_COLOR, &separator.color);
 	XAllocColor(dis, separator.colormap, &separator.color);
 	XSetForeground(dis, separator.gc, separator.color.pixel);
+	/* DBG */	fprintf(stderr, "prepare_separator(): OUT\n");
 }
 
 /* REMAKE THIS + ALL CALLS */
 void draw_separator(void)
 {
+	/* DBG */	fprintf(stderr, "draw_separator(): IN\n");
 	XFillRectangle(dis, root, separator.gc,
 			split_width_x - SPLIT_SEPARATOR_WIDTH / 2,
 			0,
 			SPLIT_SEPARATOR_WIDTH,
 			sh);
 	/* DBG */	fprintf(stderr, "draws: %ld\n", ++draws);
+	/* DBG */	fprintf(stderr, "draw_separator(): OUT\n");
 }
 
-/* REMAKE */
 void separator_increase(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "separator_increase()\n");
-	if (split_width_x >= 0  && split_width_x < sw) {
+	/* DBG */	fprintf(stderr, "separator_increase(): IN\n");
+	if (split_width_x + SEPARATOR_INCREASE < sw) {
 		split_width_x += SEPARATOR_INCREASE;
 	}
 	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
@@ -475,13 +522,13 @@ void separator_increase(const Arg *arg)
 	views[cv_id].curr_desk = LEFT;
 	views[cv_id].ld[views[cv_id].curr_left_id].master_size += 10;
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	/* DBG */	fprintf(stderr, "separator_increase(): OUT\n");
 }
 
-/* REMAKE */
 void separator_decrease(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "separator_decrease()\n");
-	if (split_width_x >= 0 && split_width_x <= sw)
+	/* DBG */	fprintf(stderr, "separator_decrease(): IN\n");
+	if (split_width_x - SEPARATOR_DECREASE > MIN_WINDOW_SIZE)
 		split_width_x -= SEPARATOR_DECREASE;
 	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
 	draw_separator();
@@ -492,10 +539,12 @@ void separator_decrease(const Arg *arg)
 	views[cv_id].curr_desk = RIGHT;
 	views[cv_id].rd[views[cv_id].curr_right_id].master_size += 10;
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	/* DBG */	fprintf(stderr, "separator_decrease(): OUT\n");
 }
 
 void maximize(Window w)
 {
+	/* DBG */	fprintf(stderr, "maximize(): IN\n");
 	if (views[cv_id].curr_desk == LEFT) {
 		XMoveResizeWindow(dis, w,
 				  BORDER_OFFSET,
@@ -510,19 +559,28 @@ void maximize(Window w)
 				  - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
 				  split_height_y - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
 	}
+	/* DBG */	fprintf(stderr, "maximize(): OUT\n");
 }
 
 void maximize_current(const Arg *arg)
 {
-	if (views[cv_id].curr_desk == LEFT)
-		maximize(views[cv_id].ld[views[cv_id].curr_left_id].curr->win);
-	else
-		maximize(views[cv_id].rd[views[cv_id].curr_right_id].curr->win);
+	/* DBG */	fprintf(stderr, "maximize_current(): IN\n");
+	Client *c = NULL;
+	if (views[cv_id].curr_desk == LEFT) {
+		if ((c = views[cv_id].ld[views[cv_id].curr_left_id].curr))
+			maximize(c->win);
+	} else if (views[cv_id].curr_desk == RIGHT) {
+		if ((c = views[cv_id].rd[views[cv_id].curr_right_id].curr))
+			maximize(c->win);
+	} else {
+		return;
+	}
+	/* DBG */	fprintf(stderr, "maximize_current(): OUT\n");
 }
 
 void focuscurrent(void)
 {
-	/* DBG */	fprintf(stderr, "focuscurrent()\n");
+	/* DBG */	fprintf(stderr, "focuscurrent(): IN\n");
 	Client *c = NULL;
 	Client *n = NULL;
 	Desktop *d = NULL;
@@ -559,11 +617,13 @@ void focuscurrent(void)
 				XSetWindowBorder(dis, c->win, right_win_unfocus);
 			}
 		}
+
+	/* DBG */	fprintf(stderr, "focuscurrent(): OUT\n");
 }
 
 void removewindow(Window w)
 {
-	/* DBG */	fprintf(stderr, "removewindow()\n");
+	/* DBG */	fprintf(stderr, "removewindow(): IN\n");
 	Client *c = NULL;
 	Desktop *d = NULL;
 
@@ -573,43 +633,66 @@ void removewindow(Window w)
 	for (c = d->head; c; c = c->next) {
 		if (c->win == w) {
 			if (!c->next && !c->prev) {
-				fprintf(stderr, "head only window\n");
-				free(head_client);
+				fprintf(stderr, "removewindow(): HEAD ONLY WINDOW\n");
 				d->head = NULL;
 				d->curr = NULL;
 				return;
 			} else if (!c->prev) {
-				fprintf(stderr, "head window\n");
+				fprintf(stderr, "removewindow(): HEAD WINDOW\n");
 				d->head = c->next;
 				c->next->prev = NULL;
-				current_client = c->next;
+				d->curr = c->next;
 			} else if (!c->next) {
-				fprintf(stderr, "last window\n");
+	/* DBG */	fprintf(stderr, "removewindow()\t\t1\n");
+				fprintf(stderr, "removewindow(): LAST WINDOW\n");
 				c->prev->next = NULL;
 				d->curr = c->prev;
 			} else {
-				fprintf(stderr, "mid window\n");
+				fprintf(stderr, "removewindow(): MID WINDOW\n");
 				c->prev->next = c->next;
 				c->next->prev = c->prev;
 				d->curr = c->next;
 			}
+	/* DBG */	fprintf(stderr, "removewindow()\t\t2\n");
 			focuscurrent();
+	/* DBG */	fprintf(stderr, "removewindow()\t\tfree(c)\n");
 			free(c);
+	/* DBG */	fprintf(stderr, "removewindow()\t\tdone free(c)\n");
+	/* DBG */	fprintf(stderr, "removewindow(): OUT\n");
 			return;
 		}
 	}
-	/* DBG */	fprintf(stderr, "removewindow() exit\n");
+	/* DBG */	fprintf(stderr, "removewindow()\t\t3\n");
+	/* DBG */	fprintf(stderr, "removewindow(): OUT\n");
+}
+
+void configurerequest(XEvent *e)
+{
+	/* DBG */	fprintf(stderr, "cofigurerequest(): IN\n");
+	XConfigureRequestEvent *ev = &e->xconfigurerequest;
+	XWindowChanges wc;
+	wc.x = ev->x;
+	wc.y = ev->y;
+	wc.width = ev->width;
+	wc.height = ev->height;
+	wc.border_width = ev->border_width;
+	wc.sibling = ev->above;
+	wc.stack_mode = ev->detail;
+	if (XConfigureWindow(dis, ev->window, ev->value_mask, &wc))
+		XSync(dis, False);
+	/* DBG */	fprintf(stderr, "cofigurerequest(): OUT\n");
 }
 
 void destroynotify(XEvent *e)
 {
-	/* DBG */	fprintf(stderr, "destroynotify()\n");
+	/* DBG */	fprintf(stderr, "destroynotify(): IN\n");
 	removewindow(e->xdestroywindow.window);
+	/* DBG */	fprintf(stderr, "destroynotify(): OUT\n");
 }
 
 void maprequest(XEvent *e)
 {
-	/* DBG */	fprintf(stderr, "maprequest()\n");
+	/* DBG */	fprintf(stderr, "maprequest(): IN\n");
 	Window w = e->xmaprequest.window;
 
 	XMapWindow(dis, w);
@@ -618,12 +701,13 @@ void maprequest(XEvent *e)
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	else
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	/* DBG */	fprintf(stderr, "maprequest(): OUT\n");
 }
 
 /* IMPLEMENT LATER */
 void tile(Desktop *d)
 {
-	/* DBG */	fprintf(stderr, "tile()\n");
+	/* DBG */	fprintf(stderr, "tile(): IN\n");
 	Client *c = NULL;
 	int n = 0;
 	int y = 0;
@@ -671,11 +755,12 @@ void tile(Desktop *d)
 			y += sh / n;
 		}	
 	}
+	/* DBG */	fprintf(stderr, "tile(): OUT\n");
 }
 
 void mousemove(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "in mousemotion\n");
+	/* DBG */	fprintf(stderr, "mousemotion(): IN\n");
 	int c;
 	int rx, ry;
 	int xw, yh;
@@ -714,18 +799,20 @@ void mousemove(const Arg *arg)
 				XResizeWindow(dis, d->curr->win,
 					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
 					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
-			} else if (arg->i == MOVE && views[cv_id].curr_desk == LEFT &&
-				   xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2 &&
-				   xw > 0 &&
-			           yh + wa.height + 2 * BORDER_WIDTH < split_height_y &&
-				   yh > 0) {
+			} else if (arg->i == MOVE
+				&& views[cv_id].curr_desk == LEFT
+				&& xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2
+				&& xw > 0
+				&& yh + wa.height + 2 * BORDER_WIDTH < split_height_y
+				&& yh > 0) {
 	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE LEFT\n");
 					XMoveWindow(dis, d->curr->win, xw, yh);
-			} else if (arg->i == MOVE && views[cv_id].curr_desk == RIGHT &&
-				   xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2 &&
-				   xw + wa.width + 2 * BORDER_WIDTH < sw &&
-				   yh + wa.height + 2 * BORDER_WIDTH < sh &&
-				   yh > 0) {
+			} else if (arg->i == MOVE
+				&& views[cv_id].curr_desk == RIGHT
+				&& xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2
+				&& xw + wa.width + 2 * BORDER_WIDTH < sw
+				&& yh + wa.height + 2 * BORDER_WIDTH < sh
+				&& yh > 0) {
 	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE RIGHT\n");
 					XMoveWindow(dis, d->curr->win, xw, yh);
 			}
@@ -736,11 +823,12 @@ void mousemove(const Arg *arg)
 
 	XUngrabPointer(dis, CurrentTime);
 	draw_separator();
-	/* DBG */	fprintf(stderr, "out mousemotion\n");
+	/* DBG */	fprintf(stderr, "mousemotion(): OUT\n");
 }
 
 void spawn(const Arg *arg)
 {
+	/* DBG */	fprintf(stderr, "spawn(): IN\n");
 	if (fork() == 0) {
 		if (dis)
 			close(ConnectionNumber(dis));
@@ -748,17 +836,32 @@ void spawn(const Arg *arg)
 		execvp((char *)arg->com[0], (char **)arg->com);
 		err(EXIT_SUCCESS, "execvp %s", (char *)arg->com[0]);
 	}
+	/* DBG */	fprintf(stderr, "spawn(): OUT\n");
+}
+
+void sigchld(int sig)
+{
+	/* DBG */	fprintf(stderr, "sigchld(): IN\n");
+	if (signal(SIGCHLD, sigchld) == SIG_ERR)
+		die("error: can't install SIGCHLD handler\n");
+	while (0 < waitpid(-1, NULL, WNOHANG))
+		;
+	/* DBG */	fprintf(stderr, "sigchld(): OUT\n");
 }
 
 void quit(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "ending\n");
+	/* DBG */	fprintf(stderr, "quit(): IN\n");
 	running = False;
+	/* DBG */	fprintf(stderr, "quit(): OUT\n");
 }
 
 void setup(void)
 {
-	/* DBG */	fprintf(stderr, "in setup()\n");
+	/* DBG */	fprintf(stderr, "setup(): IN\n");
+	/* setup signal */
+	sigchld(0);
+
 	/* screen & root window */
 	screen = DefaultScreen(dis);
 	root = RootWindow(dis, screen);
@@ -812,21 +915,23 @@ void setup(void)
 	Arg b = { .i = views[cv_id].curr_right_id };
 	change_left_desktop(&a);
 	change_right_desktop(&b);
+	/* DBG */	fprintf(stderr, "setup(): OUT\n");
 }
 
 void run(void)
 {
-	/* DBG */	fprintf(stderr, "in run()\n");
+	/* DBG */	fprintf(stderr, "run(): IN\n");
 	XEvent e;
 
 	while (running && !XNextEvent(dis, &e))
 		if (events[e.type])
 			events[e.type](&e);
+	/* DBG */	fprintf(stderr, "run(): OUT\n");
 }
 
 int main(int argc, char **argv)
 {
-	/* DBG */	fprintf(stderr, "in main()\n");
+	/* DBG */	fprintf(stderr, "main(): IN\n");
 	if (!(dis = XOpenDisplay(NULL)))
 		die("error: cannot open display\n");
 	setup();
