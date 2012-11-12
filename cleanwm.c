@@ -1,3 +1,5 @@
+/* See LICENSE file for copyright and licence details */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -351,16 +353,15 @@ void change_left_desktop(const Arg *arg)
 		for ( ; c; c = c->next)
 			XUnmapWindow(dis, c->win);
 	}
-
 	if ((c = n->head)) {
 	/* DBG */	fprintf(stderr, "change_left_desktop(): mapping\n");
 		for ( ; c; c = c->next)
 			XMapWindow(dis, c->win);
 	}
-
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
+	tile(d);
 	/* DBG */	printstatus();
 }
 
@@ -380,16 +381,15 @@ void change_right_desktop(const Arg *arg)
 		for ( ; c; c = c->next)
 			XUnmapWindow(dis, c->win);
 	}
-
 	if ((c = n->head)) {
 	/* DBG */	fprintf(stderr, "change_right_desktop(): mapping\n");
 		for ( ; c; c = c->next)
 			XMapWindow(dis, c->win);
 	}
-
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
+	tile(d);
 	/* DBG */	printstatus();
 }
 
@@ -418,22 +418,24 @@ void addwindow(Window w)
 		return;
 	if (!(c = (Client *)calloc(1, sizeof(Client))))
 		die("error: client calloc error\n");
-	if (!d->head) {
+	if (d->head == NULL) {
 		c->win = w;
 		c->next = NULL;
 		c->prev = NULL;
 		d->head = c;
 	} else {
-		c->win = w;
-		c->next = NULL;
 		for (n = d->head; n->next; n = n->next)
 			;
+		c->win = w;
+		c->next = NULL;
 		c->prev = n;
 		n->next = c;
 	}
 	d->curr = c;	/* new client is set to master */
-	XSelectInput(dis, d->curr->win, EnterWindowMask);
-	focuscurrent();
+	
+//	XSelectInput(dis, d->curr->win, EnterWindowMask);
+//	focuscurrent();
+
 	/* DBG */	fprintf(stderr, "addwindow(): OUT\n");
 	/* DBG */	printstatus();
 }
@@ -587,7 +589,7 @@ void focuscurrent(void)
 
 	if (!(d = get_current_desktop()))
 		return;
-	if (!d->head)
+	if (!d->head) {
 		if (views[cv_id].curr_desk == LEFT) {
 			if ((n = views[cv_id].rd[views[cv_id].curr_right_id].curr))
 				XSetWindowBorder(dis, n->win, right_win_unfocus);
@@ -595,8 +597,9 @@ void focuscurrent(void)
 			if ((n = views[cv_id].ld[views[cv_id].curr_left_id].curr))
 				XSetWindowBorder(dis, n->win, left_win_unfocus);
 		}
+	}
 
-	for (c = d->head; c; c = c->next)
+	for (c = d->head; c; c = c->next) {
 		if (c == d->curr) {
 			XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);
 			if (views[cv_id].curr_desk == LEFT) {
@@ -617,6 +620,7 @@ void focuscurrent(void)
 				XSetWindowBorder(dis, c->win, right_win_unfocus);
 			}
 		}
+	}
 
 	/* DBG */	fprintf(stderr, "focuscurrent(): OUT\n");
 }
@@ -629,10 +633,9 @@ void removewindow(Window w)
 
 	if (!(d = get_current_desktop()))
 		return;
-
 	for (c = d->head; c; c = c->next) {
 		if (c->win == w) {
-			if (!c->next && !c->prev) {
+			if (!c->prev && !c->next) {
 				fprintf(stderr, "removewindow(): HEAD ONLY WINDOW\n");
 				d->head = NULL;
 				d->curr = NULL;
@@ -654,7 +657,7 @@ void removewindow(Window w)
 				d->curr = c->next;
 			}
 	/* DBG */	fprintf(stderr, "removewindow()\t\t2\n");
-			focuscurrent();
+//			focuscurrent();
 	/* DBG */	fprintf(stderr, "removewindow()\t\tfree(c)\n");
 			free(c);
 	/* DBG */	fprintf(stderr, "removewindow()\t\tdone free(c)\n");
@@ -678,29 +681,72 @@ void configurerequest(XEvent *e)
 	wc.border_width = ev->border_width;
 	wc.sibling = ev->above;
 	wc.stack_mode = ev->detail;
+	XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
+
+	Desktop *d = NULL;
+	if (!(d = get_current_desktop()))
+		return;
+	tile(d);
+	
+	/*
 	if (XConfigureWindow(dis, ev->window, ev->value_mask, &wc))
 		XSync(dis, False);
+	*/
 	/* DBG */	fprintf(stderr, "cofigurerequest(): OUT\n");
 }
 
 void destroynotify(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "destroynotify(): IN\n");
-	removewindow(e->xdestroywindow.window);
+
+	int i = 0;
+	Client *c = NULL;
+	Desktop *d = NULL;
+	XDestroyWindowEvent *ev = &e->xdestroywindow;
+
+	if (!(d = get_current_desktop()))
+		return;
+	for (c = d->head; c; c = c->next) {
+		if (ev->window == c->win) {
+			i++;
+	/* DBG */	fprintf(stderr, "destroynotify(): ev->window == c->win | i == %d\n", i);
+		}
+	}
+	if (i == 0) {
+	/* DBG */	fprintf(stderr, "destroynotify(): i == 0\n");
+		return;
+	}
+
+	removewindow(ev->window);
+	tile(d);
+	focuscurrent();
+
 	/* DBG */	fprintf(stderr, "destroynotify(): OUT\n");
 }
 
 void maprequest(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "maprequest(): IN\n");
-	Window w = e->xmaprequest.window;
+	//Window w = e->xmaprequest.window;
+	XMapRequestEvent *ev = &e->xmaprequest;
+	Desktop *d = NULL;
+	Client *c = NULL;
 
-	XMapWindow(dis, w);
-	addwindow(w);
-	if (views[cv_id].curr_desk == LEFT)
-		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	else
-		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	if (!(d = get_current_desktop()))
+		return;
+	for (c = d->head; c; c = c->next) {
+	/* DBG */	fprintf(stderr, "maprequest(): FOR\n");
+		if (ev->window == c->win) {
+			XMapWindow(dis, ev->window);
+			return;
+		}
+	}
+
+	addwindow(ev->window);
+	XMapWindow(dis, ev->window);
+	tile(d);
+	focuscurrent();
+
 	/* DBG */	fprintf(stderr, "maprequest(): OUT\n");
 }
 
@@ -782,7 +828,6 @@ void mousemove(const Arg *arg)
 	if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
 			 GrabModeAsync, None, None, CurrentTime) != GrabSuccess)
 		return;
-
 	draw_separator();
 
 	do {
