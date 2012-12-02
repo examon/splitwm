@@ -24,6 +24,7 @@
 #define DEFAULT_HEIGHT_SPLIT_COEFFICIENT  1    	/* screen height split coefficient, 2 == 1/2 screen heigth */
 #define SEPARATOR_INCREASE	100		/* separator increase motion distance */
 #define SEPARATOR_DECREASE	100		/* separator decrease motion distance */
+#define VIEWS_ACTIVATED		False		/* True if you want to activate views at start */
 
 /** Colors **/
 #define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
@@ -42,6 +43,10 @@ static Key keys[] = {
 	{  MOD1,             XK_j,          nextwindow,             { 0 }},
 	{  MOD4,             XK_j,          nextview,               { 0 }},
 	//{  MOD1,             XK_x,          killcurrent,            { 0 }},
+	{  MOD4,             XK_v,          activate_left_view,     { 0 }},
+	{  MOD1,             XK_v,          activate_right_view,    { 0 }},
+	{  MOD1,             XK_b,          activate_both_views,    { 0 }},
+	{  MOD4,             XK_b,          activate_both_views,    { 0 }},
 	{  MOD1,             XK_x,          kill_client,            { 0 }},
 	{  MOD1,             XK_f,          fullscreen,             { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
@@ -50,7 +55,6 @@ static Key keys[] = {
 	//{  MOD1,             XK_t,          tile,                   { 0 }},
 	{  MOD1|SHIFT,	     XK_h,	    separator_decrease,	    { 0 }},
 	{  MOD1|SHIFT,	     XK_l,	    separator_increase,     { 0 }},
-
 	{  MOD1,             XK_Return,     spawn,                  { .com = spawn_terminal }},
 	{  MOD1,             XK_p,          spawn,                  { .com = spawn_dmenu }},
 

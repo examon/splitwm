@@ -50,8 +50,11 @@ typedef struct {
 } Desktop;
 
 typedef struct {
-	Desktop	ld[10];		/* left desktops */
-	Desktop	rd[10];		/* right desktops */
+	/* note number of desktops MUST be DESKTOPS+1
+	 * becouse of activate_left_view() and activate_right_view()
+	 */
+	Desktop ld[11];		/* left desktops */
+	Desktop rd[11];		/* right desktops */
 	int curr_left_id;
 	int prev_left_id;
 	int curr_right_id;
@@ -67,10 +70,14 @@ typedef struct {
 } Separator;
 
 /** Function prototypes **/
+static void activate_both_views(const Arg *arg);
+static void activate_left_view(const Arg *arg);
+static void activate_right_view(const Arg *arg);
 static void addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_left_desktop(const Arg *arg);
 static void change_right_desktop(const Arg *arg);
+static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void draw_separator(void);
@@ -120,15 +127,15 @@ static unsigned int left_win_unfocus;
 static unsigned int right_win_unfocus;
 static float split_width_x;
 static float split_height_y;
-static unsigned long draws;
 static Display *dis;
 static Window root;
 static Bool running = True;
+static Bool views_activated;
 static Separator separator;
 static View views[VIEWS];
 
 /** Event handlers **/
-static void (*events[LASTEvent])(XEvent *e) = {
+static void (*events[LASTEvent]) (XEvent *e) = {
 	[ButtonPress]      = buttonpress,
 	[ConfigureRequest] = configurerequest,
 	[DestroyNotify]    = destroynotify,
@@ -208,16 +215,21 @@ void enternotify(XEvent *e)
 	/* DBG */	fprintf(stderr, "enternotify(): IN\n");
 	Client *c = NULL;
 	Desktop *d = NULL;
-	Window w = e->xcrossing.window;
 
+	XCrossingEvent *ev = &e->xcrossing;
+	if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
+		return;
 	if (!(d = get_current_desktop()))
 		return;
-	for (c = d->head; c; c = c->next)
-		if (c->win == w) {
+
+	for (c = d->head; c; c = c->next) {
+		if (c->win == ev->window) {
 			d->curr = c;
 			focuscurrent();
 			return;
 		}
+	}
+
 	/* DBG */	fprintf(stderr, "enternotify(): OUT\n");
 }
 
@@ -361,7 +373,7 @@ void change_left_desktop(const Arg *arg)
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
-	tile(d);
+	//tile(d);
 	/* DBG */	printstatus();
 }
 
@@ -389,7 +401,7 @@ void change_right_desktop(const Arg *arg)
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
-	tile(d);
+	//tile(d);
 	/* DBG */	printstatus();
 }
 
@@ -433,7 +445,7 @@ void addwindow(Window w)
 	}
 	d->curr = c;	/* new client is set to master */
 	
-//	XSelectInput(dis, d->curr->win, EnterWindowMask);
+	XSelectInput(dis, d->curr->win, EnterWindowMask);
 //	focuscurrent();
 
 	/* DBG */	fprintf(stderr, "addwindow(): OUT\n");
@@ -485,6 +497,73 @@ void fullscreen(const Arg *arg)
 	/* DBG */	fprintf(stderr, "fullscreen(): OUT\n");
 }
 
+void activate_left_view(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
+	split_width_x = sw;
+	draw_separator();
+
+	Arg a = { .i = DESKTOPS };
+	views[cv_id].curr_desk = RIGHT;
+	change_right_desktop(&a);
+	views[cv_id].curr_desk = LEFT;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	focuscurrent();
+
+	/*
+	if (views[cv_id].curr_desk == LEFT)
+		views[cv_id].curr_desk = RIGHT;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	views[cv_id].curr_desk = LEFT;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	*/
+	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
+}
+
+void activate_right_view(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
+	split_width_x = 0;
+	draw_separator();
+
+	Arg a = { .i = DESKTOPS };
+	views[cv_id].curr_desk = LEFT;
+	change_left_desktop(&a);
+	views[cv_id].curr_desk = RIGHT;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	focuscurrent();
+
+	/*
+	if (views[cv_id].curr_desk == LEFT)
+		views[cv_id].curr_desk = RIGHT;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	views[cv_id].curr_desk = LEFT;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	*/
+	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
+}
+
+void activate_both_views(const Arg *arg)
+{
+	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
+	if (views[cv_id].curr_desk == LEFT) {
+		views[cv_id].curr_desk = RIGHT;
+		previous_desktop(0);
+		views[cv_id].curr_desk = LEFT;
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+		focuscurrent();
+		return;
+	/* DBG */	fprintf(stderr, "activate_both_views(): LEFT\n");
+	} else if (views[cv_id].curr_desk == RIGHT) {
+		views[cv_id].curr_desk = LEFT;
+		previous_desktop(0);
+		views[cv_id].curr_desk = RIGHT;
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+		focuscurrent();
+	/* DBG */	fprintf(stderr, "activate_both_views(): RIGHT\n");
+	}
+}
+
 void prepare_separator(void)
 {
 	/* DBG */	fprintf(stderr, "prepare_separator(): IN\n");
@@ -501,11 +580,10 @@ void draw_separator(void)
 {
 	/* DBG */	fprintf(stderr, "draw_separator(): IN\n");
 	XFillRectangle(dis, root, separator.gc,
-			split_width_x - SPLIT_SEPARATOR_WIDTH / 2,
-			0,
-			SPLIT_SEPARATOR_WIDTH,
-			sh);
-	/* DBG */	fprintf(stderr, "draws: %ld\n", ++draws);
+		       split_width_x - SPLIT_SEPARATOR_WIDTH / 2,
+		       0,
+		       SPLIT_SEPARATOR_WIDTH,
+		       sh);
 	/* DBG */	fprintf(stderr, "draw_separator(): OUT\n");
 }
 
@@ -686,7 +764,7 @@ void configurerequest(XEvent *e)
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
-	tile(d);
+	//tile(d);
 	
 	/*
 	if (XConfigureWindow(dis, ev->window, ev->value_mask, &wc))
@@ -727,7 +805,6 @@ void destroynotify(XEvent *e)
 void maprequest(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "maprequest(): IN\n");
-	//Window w = e->xmaprequest.window;
 	XMapRequestEvent *ev = &e->xmaprequest;
 	Desktop *d = NULL;
 	Client *c = NULL;
@@ -745,6 +822,7 @@ void maprequest(XEvent *e)
 	addwindow(ev->window);
 	XMapWindow(dis, ev->window);
 	tile(d);
+	//maximize(d->curr->win);
 	focuscurrent();
 
 	/* DBG */	fprintf(stderr, "maprequest(): OUT\n");
@@ -922,9 +1000,13 @@ void setup(void)
 	/* setup width & heigh split coefficients */
 	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
 	split_height_y = sh / DEFAULT_HEIGHT_SPLIT_COEFFICIENT;
+	/*
+	split_width_x = sw;
+	split_height_y = sh;
+	*/
 
 	/* prepare & draw separator */
-	draws = 0;
+	views_activated = VIEWS_ACTIVATED;
 	prepare_separator();
 	draw_separator();
 
@@ -934,7 +1016,8 @@ void setup(void)
 	right_win_unfocus = getcolor(RIGHT_UNFOCUS_COLOR);
 
 	/* catch maprequests */
-	XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask);
+	XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask|PointerMotionMask|
+		     EnterWindowMask|LeaveWindowMask|PropertyChangeMask);
 
 	/* current & previouse view init */
 	cv_id = DEFAULT_VIEW;
@@ -967,6 +1050,7 @@ void run(void)
 {
 	/* DBG */	fprintf(stderr, "run(): IN\n");
 	XEvent e;
+	XSync(dis, False);
 
 	while (running && !XNextEvent(dis, &e))
 		if (events[e.type])
