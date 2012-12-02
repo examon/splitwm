@@ -130,7 +130,7 @@ static float split_height_y;
 static Display *dis;
 static Window root;
 static Bool running = True;
-static Bool views_activated;
+static Bool single_view_activated;
 static Separator separator;
 static View views[VIEWS];
 
@@ -372,6 +372,7 @@ void change_left_desktop(const Arg *arg)
 	}
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
 	//tile(d);
 	/* DBG */	printstatus();
@@ -400,6 +401,7 @@ void change_right_desktop(const Arg *arg)
 	}
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
 	//tile(d);
 	/* DBG */	printstatus();
@@ -502,7 +504,7 @@ void activate_left_view(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
 	split_width_x = sw;
 	draw_separator();
-
+	
 	Arg a = { .i = DESKTOPS };
 	views[cv_id].curr_desk = RIGHT;
 	change_right_desktop(&a);
@@ -510,13 +512,10 @@ void activate_left_view(const Arg *arg)
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	focuscurrent();
 
-	/*
-	if (views[cv_id].curr_desk == LEFT)
-		views[cv_id].curr_desk = RIGHT;
-	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
-	views[cv_id].curr_desk = LEFT;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	*/
+	if (single_view_activated == True) 
+		previous_desktop(0);
+
+	single_view_activated = True;
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
@@ -525,26 +524,23 @@ void activate_right_view(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
 	split_width_x = 0;
 	draw_separator();
-
 	Arg a = { .i = DESKTOPS };
 	views[cv_id].curr_desk = LEFT;
 	change_left_desktop(&a);
 	views[cv_id].curr_desk = RIGHT;
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	focuscurrent();
+	
+	if (single_view_activated == True) 
+		previous_desktop(0);
 
-	/*
-	if (views[cv_id].curr_desk == LEFT)
-		views[cv_id].curr_desk = RIGHT;
-	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
-	views[cv_id].curr_desk = LEFT;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	*/
+	single_view_activated = True;
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
 void activate_both_views(const Arg *arg)
 {
+	/* DBG */	fprintf(stderr, "activate_both_views(): IN\n");
 	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
 	if (views[cv_id].curr_desk == LEFT) {
 		views[cv_id].curr_desk = RIGHT;
@@ -552,6 +548,8 @@ void activate_both_views(const Arg *arg)
 		views[cv_id].curr_desk = LEFT;
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 		focuscurrent();
+		single_view_activated = False;
+	/* DBG */	fprintf(stderr, "activate_both_views(): OUT\n");
 		return;
 	/* DBG */	fprintf(stderr, "activate_both_views(): LEFT\n");
 	} else if (views[cv_id].curr_desk == RIGHT) {
@@ -560,8 +558,10 @@ void activate_both_views(const Arg *arg)
 		views[cv_id].curr_desk = RIGHT;
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 		focuscurrent();
+		single_view_activated = False;
 	/* DBG */	fprintf(stderr, "activate_both_views(): RIGHT\n");
 	}
+	/* DBG */	fprintf(stderr, "activate_both_views(): OUT\n");
 }
 
 void prepare_separator(void)
@@ -1000,13 +1000,9 @@ void setup(void)
 	/* setup width & heigh split coefficients */
 	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
 	split_height_y = sh / DEFAULT_HEIGHT_SPLIT_COEFFICIENT;
-	/*
-	split_width_x = sw;
-	split_height_y = sh;
-	*/
 
 	/* prepare & draw separator */
-	views_activated = VIEWS_ACTIVATED;
+	single_view_activated = False;
 	prepare_separator();
 	draw_separator();
 
