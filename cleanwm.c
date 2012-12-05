@@ -215,8 +215,9 @@ void enternotify(XEvent *e)
 	/* DBG */	fprintf(stderr, "enternotify(): IN\n");
 	Client *c = NULL;
 	Desktop *d = NULL;
-
+	Bool client_found = False;
 	XCrossingEvent *ev = &e->xcrossing;
+
 	if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
 		return;
 	if (!(d = get_current_desktop()))
@@ -224,12 +225,27 @@ void enternotify(XEvent *e)
 
 	for (c = d->head; c; c = c->next) {
 		if (c->win == ev->window) {
+	/* DBG */	fprintf(stderr, "enternotify(): FOCUSCURRENT()\n");
+			client_found = True;
 			d->curr = c;
 			focuscurrent();
 			return;
 		}
 	}
 
+	if (!client_found && ev->window != root) {
+	/* DBG */	fprintf(stderr, "enternotify(): NEXTVIEW()\n");
+		nextview(0);
+		if (!(d = get_current_desktop()))
+			return;
+		for (c = d->head; c; c = c->next) {
+			if (c->win == ev->window) {
+				d->curr = c;
+				focuscurrent();
+				return;
+			}
+		}
+	}
 	/* DBG */	fprintf(stderr, "enternotify(): OUT\n");
 }
 
@@ -900,7 +916,7 @@ void mousemove(const Arg *arg)
 		return;
 	if (arg->i == RESIZE)
 		XWarpPointer(dis, d->curr->win, d->curr->win,
-			     0, 0, 0, 0, --wa.width, --wa.height);	
+			     0, 0, 0, 0, --wa.width, --wa.height);
 	if (!XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &v) || w != d->curr->win)
 		return;
 	if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
