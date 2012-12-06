@@ -16,6 +16,7 @@
 
 enum { MOVE, RESIZE };
 enum { LEFT, RIGHT };
+enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 
 /** Structures **/
 typedef union {
@@ -77,6 +78,7 @@ static void addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_left_desktop(const Arg *arg);
 static void change_right_desktop(const Arg *arg);
+static void client_to_desktop(const Arg *arg);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
@@ -102,6 +104,7 @@ static void nextwindow(const Arg *arg);
 static void prepare_separator(void);
 static void previous_desktop(const Arg *arg);
 static void printstatus(void);
+static void removewindow(Window w);
 static void run(void);
 static void send_kill_signal(Window w);
 static void separator_increase(const Arg *arg);
@@ -112,6 +115,7 @@ static void spawn(const Arg *arg);
 static void status(const Arg* arg);
 static void tile(Desktop *d);
 static void quit(const Arg *arg);
+static int xerror(Display *dis, XErrorEvent *ee);
 
 /** Include config **/
 #include "config.h"
@@ -132,6 +136,7 @@ static Window root;
 static Bool running = True;
 static Bool single_view_activated;
 static Separator separator;
+static Atom wmatoms[WM_COUNT];
 static View views[VIEWS];
 
 /** Event handlers **/
@@ -325,6 +330,30 @@ void kill_client(const Arg *arg)
 
 	if (!(d = get_current_desktop()))
 		return;
+	if (!d->curr)
+		return;
+
+	Atom *prot = NULL;
+	int n = -1;
+
+	if (XGetWMProtocols(dis, d->curr->win, &prot, &n)) {
+		while (--n >= 0 && prot[n] != wmatoms[WM_DELETE_WINDOW])
+			;
+	}
+
+	if (n < 0) {
+		XKillClient(dis, d->curr->win);
+		removewindow(d->curr->win);
+		/* DBG */	fprintf(stderr, "kill_client(): n < 0\n");
+	} else {
+		send_kill_signal(d->curr->win);
+		/* DBG */	fprintf(stderr, "kill_client(): else\n");
+	}
+	
+	if (prot)
+		XFree(prot);
+
+	/*
 	if (d->curr) {
 		XEvent e;
 		e.type = ClientMessage;
@@ -336,6 +365,7 @@ void kill_client(const Arg *arg)
 		XSendEvent(dis, d->curr->win, False, NoEventMask, &e);
 		send_kill_signal(d->curr->win);
 	}
+	*/
 	/* DBG */	fprintf(stderr, "kill_client(): OUT\n");
 }
 
@@ -345,9 +375,9 @@ void send_kill_signal(Window w)
 	XEvent e;
 	e.type = ClientMessage;
 	e.xclient.window = w;
-	e.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
 	e.xclient.format = 32;
-	e.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
+	e.xclient.message_type = wmatoms[WM_PROTOCOLS];
+	e.xclient.data.l[0] = wmatoms[WM_DELETE_WINDOW];
 	e.xclient.data.l[1] = CurrentTime;
 	XSendEvent(dis, w, False, NoEventMask, &e);
 	/* DBG */	fprintf(stderr, "send_kill_signal(): OUT\n");
@@ -363,6 +393,14 @@ void killcurrent(const Arg *arg)
 	if (d->curr)
 		killwindow(d->curr->win);
 	/* DBG */	fprintf(stderr, "killcurrent(): OUT\n");
+}
+
+void client_to_desktop(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "client_to_desktop(): IN\n");
+	/* DBG */	fprintf(stderr, "client_to_desktop(): %d\n", arg->i);
+
+	/* DBG */	fprintf(stderr, "client_to_desktop(): OUT\n");
 }
 
 void change_left_desktop(const Arg *arg)
@@ -684,6 +722,7 @@ void focuscurrent(void)
 	if (!(d = get_current_desktop()))
 		return;
 	if (!d->head) {
+	/* DBG */	fprintf(stderr, "focuscurrent(): if (!d->head)\n");
 		if (views[cv_id].curr_desk == LEFT) {
 			if ((n = views[cv_id].rd[views[cv_id].curr_right_id].curr))
 				XSetWindowBorder(dis, n->win, right_win_unfocus);
@@ -694,20 +733,31 @@ void focuscurrent(void)
 	}
 
 	for (c = d->head; c; c = c->next) {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for\n");
 		if (c == d->curr) {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> if\n");
 			XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);
 			if (views[cv_id].curr_desk == LEFT) {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> if -> if\n");
 				XSetWindowBorder(dis, c->win, win_focus);
-				if ((n = views[cv_id].rd[views[cv_id].curr_right_id].curr))
+				if ((n = views[cv_id].rd[views[cv_id].curr_right_id].curr)) {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> if -> if -> if\n");
 					XSetWindowBorder(dis, n->win, right_win_unfocus);
+				}
 			} else {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> if -> else\n");
 				XSetWindowBorder(dis, c->win, win_focus);
-				if ((n = views[cv_id].ld[views[cv_id].curr_left_id].curr))
+				if ((n = views[cv_id].ld[views[cv_id].curr_left_id].curr)) {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> if -> else -> if\n");
 					XSetWindowBorder(dis, n->win, left_win_unfocus);
+				}
 			}
-			XSetInputFocus(dis, c->win, RevertToParent, CurrentTime);
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> if -> if != root\n");
+			XSetInputFocus(dis, c->win, RevertToPointerRoot, CurrentTime);
 			XRaiseWindow(dis, c->win);
+			XSync(dis, False);
 		} else {
+	/* DBG */	fprintf(stderr, "focuscurrent(): for -> else\n");
 			if (views[cv_id].curr_desk == LEFT) {
 				XSetWindowBorder(dis, c->win, left_win_unfocus);
 			} else {
@@ -715,7 +765,6 @@ void focuscurrent(void)
 			}
 		}
 	}
-
 	/* DBG */	fprintf(stderr, "focuscurrent(): OUT\n");
 }
 
@@ -728,6 +777,7 @@ void removewindow(Window w)
 	if (!(d = get_current_desktop()))
 		return;
 	for (c = d->head; c; c = c->next) {
+		fprintf(stderr, "removewindow(): for\n");
 		if (c->win == w) {
 			if (!c->prev && !c->next) {
 				fprintf(stderr, "removewindow(): HEAD ONLY WINDOW\n");
@@ -751,7 +801,6 @@ void removewindow(Window w)
 				d->curr = c->next;
 			}
 	/* DBG */	fprintf(stderr, "removewindow()\t\t2\n");
-//			focuscurrent();
 	/* DBG */	fprintf(stderr, "removewindow()\t\tfree(c)\n");
 			free(c);
 	/* DBG */	fprintf(stderr, "removewindow()\t\tdone free(c)\n");
@@ -766,6 +815,7 @@ void removewindow(Window w)
 void configurerequest(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "cofigurerequest(): IN\n");
+	/*
 	XConfigureRequestEvent *ev = &e->xconfigurerequest;
 	XWindowChanges wc;
 	wc.x = ev->x;
@@ -780,6 +830,7 @@ void configurerequest(XEvent *e)
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
+		*/
 	//tile(d);
 	
 	/*
@@ -811,9 +862,11 @@ void destroynotify(XEvent *e)
 		return;
 	}
 
-	removewindow(ev->window);
+	if (ev->window != root)
+		removewindow(ev->window);
 	tile(d);
 	focuscurrent();
+//	nextwindow(0);
 
 	/* DBG */	fprintf(stderr, "destroynotify(): OUT\n");
 }
@@ -978,6 +1031,15 @@ void spawn(const Arg *arg)
 	/* DBG */	fprintf(stderr, "spawn(): OUT\n");
 }
 
+int xerror(__attribute__((unused)) Display *dis, XErrorEvent *ee)
+{
+	/* DBG */	fprintf(stderr, "xerror(): IN\n");
+	if (ee->error_code == BadMatch) {
+		fprintf(stderr, "xerror(): XErrorEvent: BadMatch\n");
+	}
+	/* DBG */	fprintf(stderr, "xerror(): OUT\n");
+}
+
 void sigchld(int sig)
 {
 	/* DBG */	fprintf(stderr, "sigchld(): IN\n");
@@ -1027,9 +1089,18 @@ void setup(void)
 	left_win_unfocus = getcolor(LEFT_UNFOCUS_COLOR);
 	right_win_unfocus = getcolor(RIGHT_UNFOCUS_COLOR);
 
+	/* set atoms */
+	wmatoms[WM_PROTOCOLS]	  = XInternAtom(dis, "WM_PROTOCOLS", False);
+	wmatoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+
 	/* catch maprequests */
 	XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask|PointerMotionMask|
 		     EnterWindowMask|LeaveWindowMask|PropertyChangeMask);
+
+	/* set error handler */
+	XSync(dis, False);
+	XSetErrorHandler(xerror);
+	XSync(dis, False);
 
 	/* current & previouse view init */
 	cv_id = DEFAULT_VIEW;

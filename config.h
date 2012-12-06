@@ -78,7 +78,10 @@ static Key keys[] = {
 	{  MOD1,             XK_6,          change_right_desktop,   { .i = 6 }},
 	{  MOD1,             XK_7,          change_right_desktop,   { .i = 7 }},
 	{  MOD1,             XK_8,          change_right_desktop,   { .i = 8 }},
-	{  MOD1,             XK_9,          change_right_desktop,   { .i = 9 }}
+	{  MOD1,             XK_9,          change_right_desktop,   { .i = 9 }},
+
+	{  MOD1|SHIFT,       XK_1,          client_to_desktop,      { .i = 1 }},
+	{  MOD1|SHIFT,       XK_2,          client_to_desktop,      { .i = 2 }},
 
 };
 
