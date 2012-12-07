@@ -15,8 +15,8 @@
 #define VIEWS			10		/* number of views */
 #define DEFAULT_VIEW		1		/* default view */
 #define DEFAULT_FOCUSED_VIEW	LEFT		/* LEFT/RIGHT */
-#define BORDER_WIDTH		4		/* window border width */
-#define BORDER_OFFSET		4		/* spaces betweed windows borders */
+#define BORDER_WIDTH		10		/* window border width */
+#define BORDER_OFFSET		10		/* spaces betweed windows borders */
 #define MASTER_SIZE		400		/* master window size */
 #define MIN_WINDOW_SIZE 	10		/* minimum window size in pixels */
 #define SPLIT_SEPARATOR_WIDTH	4		/* width of the split seperator */
@@ -47,6 +47,7 @@ static Key keys[] = {
 	{  MOD1,             XK_q,          quit,                   { 0 }},
 	{  MOD1,             XK_j,          nextwindow,             { 0 }},
 	{  MOD4,             XK_j,          nextview,               { 0 }},
+	{  MOD4|SHIFT,       XK_j,          client_to_view,         { 0 }},
 	//{  MOD1,             XK_x,          killcurrent,            { 0 }},
 	{  MOD4,             XK_v,          activate_left_view,     { 0 }},
 	{  MOD1,             XK_v,          activate_right_view,    { 0 }},

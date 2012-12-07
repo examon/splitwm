@@ -79,7 +79,7 @@ static void buttonpress(XEvent *e);
 static void change_left_desktop(const Arg *arg);
 static void change_right_desktop(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
-static void configurenotify(XEvent *e);
+static void client_to_view(const Arg *arg);
 static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void draw_separator(void);
@@ -432,11 +432,42 @@ void client_to_desktop(const Arg *arg)
 	/* DBG */	fprintf(stderr, "client_to_desktop(): OUT\n");
 }
 
+void client_to_view(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "client_to_view(): IN\n");
+	Client *c = NULL;
+	Desktop *d = NULL;
+	
+	if (!(d = get_current_desktop()))
+		return;
+	c = d->curr;
+	if (!c || single_view_activated)
+		return;
+	if (views[cv_id].curr_desk == LEFT) {
+		views[cv_id].curr_desk = RIGHT;
+		addwindow(c->win);
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+		focuscurrent();
+		views[cv_id].curr_desk = LEFT;
+		removewindow(c->win);
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	} else {
+		views[cv_id].curr_desk = LEFT;
+		addwindow(c->win);
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+		focuscurrent();
+		views[cv_id].curr_desk = RIGHT;
+		removewindow(c->win);
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	}
+	focuscurrent();
+	/* DBG */	fprintf(stderr, "client_to_view(): OUT\n");
+}
+
 void change_left_desktop(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "change_left_desktop(): IN\n");
 	/* DBG */	fprintf(stderr, "change_left_desktop(): %d -> %d\n", views[cv_id].curr_left_id, arg->i);
-	/* DBG */	//printstatus();
 	Client *c;
 	Desktop *d = &views[cv_id].ld[views[cv_id].curr_left_id];
 	Desktop *n = &views[cv_id].ld[arg->i];
@@ -533,10 +564,7 @@ void addwindow(Window w)
 		n->next = c;
 	}
 	d->curr = c;	/* new client is set to master */
-	
 	XSelectInput(dis, d->curr->win, EnterWindowMask);
-//	focuscurrent();
-
 	/* DBG */	fprintf(stderr, "addwindow(): OUT\n");
 	/* DBG */	printstatus();
 }
@@ -589,9 +617,8 @@ void fullscreen(const Arg *arg)
 void activate_left_view(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
-	split_width_x = sw;
+	split_width_x = sw + SPLIT_SEPARATOR_WIDTH / 2;
 	draw_separator();
-	
 	Arg a = { .i = DESKTOPS };
 	views[cv_id].curr_desk = RIGHT;
 	change_right_desktop(&a);
@@ -599,9 +626,8 @@ void activate_left_view(const Arg *arg)
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	focuscurrent();
 
-	if (single_view_activated == True) 
+	if (single_view_activated) 
 		previous_desktop(0);
-
 	single_view_activated = True;
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
@@ -609,7 +635,7 @@ void activate_left_view(const Arg *arg)
 void activate_right_view(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
-	split_width_x = 0;
+	split_width_x = 0 - SPLIT_SEPARATOR_WIDTH / 2;
 	draw_separator();
 	Arg a = { .i = DESKTOPS };
 	views[cv_id].curr_desk = LEFT;
@@ -618,9 +644,8 @@ void activate_right_view(const Arg *arg)
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	focuscurrent();
 	
-	if (single_view_activated == True) 
+	if (single_view_activated) 
 		previous_desktop(0);
-
 	single_view_activated = True;
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
