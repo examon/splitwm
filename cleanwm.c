@@ -395,11 +395,40 @@ void killcurrent(const Arg *arg)
 	/* DBG */	fprintf(stderr, "killcurrent(): OUT\n");
 }
 
+
 void client_to_desktop(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "client_to_desktop(): IN\n");
 	/* DBG */	fprintf(stderr, "client_to_desktop(): %d\n", arg->i);
+	Client *c = NULL;
+	Desktop *d = NULL;
+	const Arg a = { .i = arg->i };
+	int tmp_id;
 
+	if (!(d = get_current_desktop()))
+		return;
+	c = d->curr;
+	if (!c)
+		return;
+	if (views[cv_id].curr_desk == LEFT) {
+		tmp_id = views[cv_id].curr_left_id;
+		views[cv_id].curr_left_id = arg->i;
+	} else {
+		tmp_id = views[cv_id].curr_right_id;
+		views[cv_id].curr_right_id = arg->i;
+	}
+	addwindow(c->win);
+	focuscurrent();
+	if (views[cv_id].curr_desk == LEFT) {
+		views[cv_id].curr_left_id = tmp_id;
+	} else {
+		views[cv_id].curr_right_id = arg->i;
+	}
+	XUnmapWindow(dis, c->win);
+	removewindow(d->curr->win);
+	tile(d);
+	focuscurrent();
+	
 	/* DBG */	fprintf(stderr, "client_to_desktop(): OUT\n");
 }
 
@@ -426,9 +455,11 @@ void change_left_desktop(const Arg *arg)
 	}
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	if (single_view_activated || views[cv_id].curr_desk == LEFT)
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	focuscurrent();
+	//tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
-	//tile(d);
 	/* DBG */	printstatus();
 }
 
@@ -455,9 +486,11 @@ void change_right_desktop(const Arg *arg)
 	}
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
-	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	if (single_view_activated || views[cv_id].curr_desk == RIGHT)
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	focuscurrent();
+	//tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
-	//tile(d);
 	/* DBG */	printstatus();
 }
 

@@ -36,6 +36,11 @@
 static const char *spawn_terminal[] = { "urxvt", NULL };
 static const char *spawn_dmenu[]    = { "dmenu_run", NULL };
 
+/** Anti-multiple paste macro **/
+#define CLIENT_TO_DESKTOP(K, N) \
+	{  MOD4|SHIFT,       K,             client_to_desktop,      { .i = N }}, \
+	{  MOD1|SHIFT,       K,             client_to_desktop,      { .i = N }},
+
 /** Keyboard shortcuts **/
 static Key keys[] = {
 	/* modifier          key            function                argument */
@@ -57,7 +62,8 @@ static Key keys[] = {
 	{  MOD1|SHIFT,	     XK_l,	    separator_increase,     { 0 }},
 	{  MOD1,             XK_Return,     spawn,                  { .com = spawn_terminal }},
 	{  MOD1,             XK_p,          spawn,                  { .com = spawn_dmenu }},
-
+	{  MOD4,             XK_p,          spawn,                  { .com = spawn_dmenu }},
+	
 	{  MOD4,             XK_0,          change_left_desktop,    { .i = 0 }},
 	{  MOD4,             XK_1,          change_left_desktop,    { .i = 1 }},
 	{  MOD4,             XK_2,          change_left_desktop,    { .i = 2 }},
@@ -79,10 +85,17 @@ static Key keys[] = {
 	{  MOD1,             XK_7,          change_right_desktop,   { .i = 7 }},
 	{  MOD1,             XK_8,          change_right_desktop,   { .i = 8 }},
 	{  MOD1,             XK_9,          change_right_desktop,   { .i = 9 }},
-
-	{  MOD1|SHIFT,       XK_1,          client_to_desktop,      { .i = 1 }},
-	{  MOD1|SHIFT,       XK_2,          client_to_desktop,      { .i = 2 }},
-
+	
+	CLIENT_TO_DESKTOP(   XK_0,                                    0)
+	CLIENT_TO_DESKTOP(   XK_1,                                    1)
+	CLIENT_TO_DESKTOP(   XK_2,                                    2)
+	CLIENT_TO_DESKTOP(   XK_3,                                    3)
+	CLIENT_TO_DESKTOP(   XK_4,                                    4)
+	CLIENT_TO_DESKTOP(   XK_5,                                    5)
+	CLIENT_TO_DESKTOP(   XK_6,                                    6)
+	CLIENT_TO_DESKTOP(   XK_7,                                    7)
+	CLIENT_TO_DESKTOP(   XK_8,                                    8)
+	CLIENT_TO_DESKTOP(   XK_9,                                    9)
 };
 
 /** Mouse shortcuts **/
