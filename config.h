@@ -15,16 +15,18 @@
 #define VIEWS			10		/* number of views */
 #define DEFAULT_VIEW		1		/* default view */
 #define DEFAULT_FOCUSED_VIEW	LEFT		/* LEFT/RIGHT */
-#define BORDER_WIDTH		10		/* window border width */
-#define BORDER_OFFSET		10		/* spaces betweed windows borders */
-#define MASTER_SIZE		400		/* master window size */
+#define BORDER_WIDTH		4		/* window border width */
+#define BORDER_OFFSET		4		/* spaces betweed windows borders */
+#define MASTER_SIZE		0		/* master window size, if 0 then MASTER_SIZE = screen_width / 2 */
 #define MIN_WINDOW_SIZE 	10		/* minimum window size in pixels */
-#define SPLIT_SEPARATOR_WIDTH	4		/* width of the split seperator */
+#define SPLIT_SEPARATOR_WIDTH	2		/* width of the split seperator */
 #define DEFAULT_WIDTH_SPLIT_COEFFICIENT	  2	/* screen width split coefficient, 2 == 1/2 screen width */
 #define DEFAULT_HEIGHT_SPLIT_COEFFICIENT  1    	/* screen height split coefficient, 2 == 1/2 screen heigth */
-#define SEPARATOR_INCREASE	100		/* separator increase motion distance */
-#define SEPARATOR_DECREASE	100		/* separator decrease motion distance */
-#define VIEWS_ACTIVATED		False		/* True if you want to activate views at start */
+#define SEPARATOR_INCREASE	20		/* separator increase motion distance */
+#define SEPARATOR_DECREASE	20		/* separator decrease motion distance */
+#define VIEWS_ACTIVATED		True		/* True if you want to activate views at start */
+#define SHOW_BAR		False		/* True if you want to show bar */
+#define BAR_HEIGHT		20		/* bar height */
 
 /** Colors **/
 #define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
@@ -48,17 +50,16 @@ static Key keys[] = {
 	{  MOD1,             XK_j,          nextwindow,             { 0 }},
 	{  MOD4,             XK_j,          nextview,               { 0 }},
 	{  MOD4|SHIFT,       XK_j,          client_to_view,         { 0 }},
-	//{  MOD1,             XK_x,          killcurrent,            { 0 }},
 	{  MOD4,             XK_v,          activate_left_view,     { 0 }},
 	{  MOD1,             XK_v,          activate_right_view,    { 0 }},
 	{  MOD1,             XK_b,          activate_both_views,    { 0 }},
 	{  MOD4,             XK_b,          activate_both_views,    { 0 }},
 	{  MOD1,             XK_x,          kill_client,            { 0 }},
 	{  MOD1,             XK_f,          fullscreen,             { 0 }},
+	{  MOD1,             XK_t,          tile_current,           { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
 	{  MOD1,             XK_i,          status,                 { 0 }},
-	//{  MOD1,             XK_t,          tile,                   { 0 }},
 	{  MOD1|SHIFT,	     XK_h,	    separator_decrease,	    { 0 }},
 	{  MOD1|SHIFT,	     XK_l,	    separator_increase,     { 0 }},
 	{  MOD1,             XK_Return,     spawn,                  { .com = spawn_terminal }},

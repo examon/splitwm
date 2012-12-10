@@ -82,9 +82,11 @@ static void client_to_desktop(const Arg *arg);
 static void client_to_view(const Arg *arg);
 static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
+static void draw_bar(void);
 static void draw_separator(void);
 static void die(const char *errstr, ...);
 static void enternotify(XEvent *e);
+static void expose(XEvent *e);
 static void focuscurrent(void);
 static void fullscreen(const Arg *arg);
 static unsigned long getcolor(const char *color);
@@ -114,6 +116,7 @@ static void sigchld(int sig);
 static void spawn(const Arg *arg);
 static void status(const Arg* arg);
 static void tile(Desktop *d);
+static void tile_current(const Arg *arg);
 static void quit(const Arg *arg);
 static int xerror(Display *dis, XErrorEvent *ee);
 
@@ -144,7 +147,8 @@ static void (*events[LASTEvent]) (XEvent *e) = {
 	[ButtonPress]      = buttonpress,
 	[ConfigureRequest] = configurerequest,
 	[DestroyNotify]    = destroynotify,
-	[EnterNotify]	   = enternotify,
+	[EnterNotify]      = enternotify,
+	[Expose]           = expose,
 	[KeyPress]         = keypress,
 	[MapRequest]       = maprequest
 };
@@ -252,6 +256,13 @@ void enternotify(XEvent *e)
 		}
 	}
 	/* DBG */	fprintf(stderr, "enternotify(): OUT\n");
+}
+
+void expose(XEvent *e)
+{
+	/* DBG */	fprintf(stderr, "expose(): IN\n");
+
+	/* DBG */	fprintf(stderr, "expose(): OUT\n");
 }
 
 Desktop *get_current_desktop(void)
@@ -647,6 +658,7 @@ void activate_right_view(const Arg *arg)
 	if (single_view_activated) 
 		previous_desktop(0);
 	single_view_activated = True;
+
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
@@ -674,6 +686,11 @@ void activate_both_views(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_both_views(): RIGHT\n");
 	}
 	/* DBG */	fprintf(stderr, "activate_both_views(): OUT\n");
+}
+
+void draw_bar(void)
+{
+	/* TODO */
 }
 
 void prepare_separator(void)
@@ -740,13 +757,13 @@ void maximize(Window w)
 	if (views[cv_id].curr_desk == LEFT) {
 		XMoveResizeWindow(dis, w,
 				  BORDER_OFFSET,
-				  BORDER_OFFSET,
+				  BORDER_OFFSET + (SHOW_BAR ? (BAR_HEIGHT) : (0)),
 				  split_width_x - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
 				  split_height_y - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
 	} else if (views[cv_id].curr_desk == RIGHT) {
 		XMoveResizeWindow(dis, w,
 				  split_width_x + BORDER_OFFSET + SPLIT_SEPARATOR_WIDTH / 2,
-				  BORDER_OFFSET,
+				  BORDER_OFFSET + (SHOW_BAR ? (BAR_HEIGHT) : (0)),
 				  sw  - split_width_x - 2 * BORDER_WIDTH \
 				  - 2 * BORDER_OFFSET - SPLIT_SEPARATOR_WIDTH / 2,
 				  split_height_y - 2 * BORDER_WIDTH - 2 * BORDER_OFFSET);
@@ -873,7 +890,6 @@ void removewindow(Window w)
 void configurerequest(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "cofigurerequest(): IN\n");
-	/*
 	XConfigureRequestEvent *ev = &e->xconfigurerequest;
 	XWindowChanges wc;
 	wc.x = ev->x;
@@ -888,13 +904,7 @@ void configurerequest(XEvent *e)
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
-		*/
-	//tile(d);
-	
-	/*
-	if (XConfigureWindow(dis, ev->window, ev->value_mask, &wc))
-		XSync(dis, False);
-	*/
+	tile(d);
 	/* DBG */	fprintf(stderr, "cofigurerequest(): OUT\n");
 }
 
@@ -924,7 +934,6 @@ void destroynotify(XEvent *e)
 		removewindow(ev->window);
 	tile(d);
 	focuscurrent();
-//	nextwindow(0);
 
 	/* DBG */	fprintf(stderr, "destroynotify(): OUT\n");
 }
@@ -949,16 +958,34 @@ void maprequest(XEvent *e)
 	addwindow(ev->window);
 	XMapWindow(dis, ev->window);
 	tile(d);
-	//maximize(d->curr->win);
 	focuscurrent();
 
 	/* DBG */	fprintf(stderr, "maprequest(): OUT\n");
 }
 
-/* IMPLEMENT LATER */
+void tile_current(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "tile_current(): IN\n");
+	Desktop *d = NULL;
+
+	if (!(d = get_current_desktop()))
+		return;
+	tile(d);
+	/* DBG */	fprintf(stderr, "tile_current(): OUT\n");
+}
+
+/* IMPROVE LATER */
 void tile(Desktop *d)
 {
-	/* DBG */	fprintf(stderr, "tile(): IN\n");
+	/** 
+	 * +-----+---+
+	 * |     |   |
+	 * |     +---+
+	 * |     |   |
+	 * |     +---+
+	 * |     |   |
+	 * +-----+---+
+	 */
 	Client *c = NULL;
 	int n = 0;
 	int y = 0;
@@ -1006,7 +1033,6 @@ void tile(Desktop *d)
 			y += sh / n;
 		}	
 	}
-	/* DBG */	fprintf(stderr, "tile(): OUT\n");
 }
 
 void mousemove(const Arg *arg)
@@ -1052,17 +1078,19 @@ void mousemove(const Arg *arg)
 			} else if (arg->i == MOVE
 				&& views[cv_id].curr_desk == LEFT
 				&& xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2
-				&& xw > 0
-				&& yh + wa.height + 2 * BORDER_WIDTH < split_height_y
-				&& yh > 0) {
+				//&& xw > 0
+				//&& yh + wa.height + 2 * BORDER_WIDTH < split_height_y
+				// && yh > 0
+				) {
 	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE LEFT\n");
 					XMoveWindow(dis, d->curr->win, xw, yh);
 			} else if (arg->i == MOVE
 				&& views[cv_id].curr_desk == RIGHT
 				&& xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2
-				&& xw + wa.width + 2 * BORDER_WIDTH < sw
-				&& yh + wa.height + 2 * BORDER_WIDTH < sh
-				&& yh > 0) {
+				//&& xw + wa.width + 2 * BORDER_WIDTH < sw
+				//&& yh + wa.height + 2 * BORDER_WIDTH < sh
+				//&& yh > 0
+				) {
 	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE RIGHT\n");
 					XMoveWindow(dis, d->curr->win, xw, yh);
 			}
@@ -1128,14 +1156,14 @@ void setup(void)
 	/* screen width & height */
 	sw = DisplayWidth(dis, screen);
 	sh = DisplayHeight(dis, screen);
-	
+
 	/* grab keys & buttons */
 	grabkeys();
 	grabbuttons();
 
 	/* setup width & heigh split coefficients */
 	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
-	split_height_y = sh / DEFAULT_HEIGHT_SPLIT_COEFFICIENT;
+	split_height_y = sh / DEFAULT_HEIGHT_SPLIT_COEFFICIENT - (SHOW_BAR ? (BAR_HEIGHT) : (0));
 
 	/* prepare & draw separator */
 	single_view_activated = False;
@@ -1172,11 +1200,11 @@ void setup(void)
 	unsigned int i;
 	for (i = 0; i < DESKTOPS; i++) {
 		views[cv_id].ld[i].head = NULL;
-		views[cv_id].ld[i].curr = NULL;
-		views[cv_id].ld[i].master_size = MASTER_SIZE;
 		views[cv_id].rd[i].head = NULL;
+		views[cv_id].ld[i].curr = NULL;
 		views[cv_id].rd[i].curr = NULL;
-		views[cv_id].rd[i].master_size = MASTER_SIZE;
+		views[cv_id].ld[i].master_size = ((MASTER_SIZE) ? (MASTER_SIZE) : (split_width_x / 2));
+		views[cv_id].rd[i].master_size = ((MASTER_SIZE) ? (MASTER_SIZE) : (split_width_x / 2));
 	}
 
 	/* change to default desktop */
@@ -1184,6 +1212,15 @@ void setup(void)
 	Arg b = { .i = views[cv_id].curr_right_id };
 	change_left_desktop(&a);
 	change_right_desktop(&b);
+
+	if (VIEWS_ACTIVATED) {
+		if (DEFAULT_FOCUSED_VIEW == LEFT) {
+			activate_left_view(0);
+		} else {
+			activate_right_view(0);
+		}
+	}
+		
 	/* DBG */	fprintf(stderr, "setup(): OUT\n");
 }
 

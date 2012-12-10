@@ -1,4 +1,4 @@
-cflags+= -std=c99 -Wall -pedantic -Os
+cflags+= -std=c99 -Wall -Werror -pedantic -Os
 LDFLAGS=-lX11
 EXEC=cleanwm
 
