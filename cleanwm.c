@@ -363,20 +363,6 @@ void kill_client(const Arg *arg)
 	
 	if (prot)
 		XFree(prot);
-
-	/*
-	if (d->curr) {
-		XEvent e;
-		e.type = ClientMessage;
-		e.xclient.window = d->curr->win;
-		e.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
-		e.xclient.format = 32;
-		e.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
-		e.xclient.data.l[1] = CurrentTime;
-		XSendEvent(dis, d->curr->win, False, NoEventMask, &e);
-		send_kill_signal(d->curr->win);
-	}
-	*/
 	/* DBG */	fprintf(stderr, "kill_client(): OUT\n");
 }
 
@@ -433,7 +419,7 @@ void client_to_desktop(const Arg *arg)
 	if (views[cv_id].curr_desk == LEFT) {
 		views[cv_id].curr_left_id = tmp_id;
 	} else {
-		views[cv_id].curr_right_id = arg->i;
+		views[cv_id].curr_right_id = tmp_id;
 	}
 	XUnmapWindow(dis, c->win);
 	removewindow(d->curr->win);
