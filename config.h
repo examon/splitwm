@@ -3,10 +3,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/** Font **/
+static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
+
 /** Modifiers **/
 #define MOD1		Mod1Mask	/* ALT key */
 #define MOD4		Mod4Mask	/* Super/Win key */
 #define SHIFT		ShiftMask	/* Shift key */
+
+/** Cursor **/
+#define CURSOR		XC_left_ptr	/* default cursor */
 
 /** Settings **/
 #define DESKTOPS		10		/* number of desktops */	
@@ -15,8 +21,8 @@
 #define VIEWS			10		/* number of views */
 #define DEFAULT_VIEW		1		/* default view */
 #define DEFAULT_FOCUSED_VIEW	LEFT		/* LEFT/RIGHT */
-#define BORDER_WIDTH		4		/* window border width */
-#define BORDER_OFFSET		4		/* spaces betweed windows borders */
+#define BORDER_WIDTH		2		/* window border width */
+#define BORDER_OFFSET		0		/* spaces betweed windows borders */
 #define MASTER_SIZE		0		/* master window size, if 0 then MASTER_SIZE = screen_width / 2 */
 #define MIN_WINDOW_SIZE 	10		/* minimum window size in pixels */
 #define SPLIT_SEPARATOR_WIDTH	2		/* width of the split seperator */
@@ -25,10 +31,13 @@
 #define SEPARATOR_INCREASE	20		/* separator increase motion distance */
 #define SEPARATOR_DECREASE	20		/* separator decrease motion distance */
 #define VIEWS_ACTIVATED		True		/* True if you want to activate views at start */
-#define SHOW_BAR		False		/* True if you want to show bar */
+#define SHOW_BAR		True		/* True if you want to show bar */
 #define BAR_HEIGHT		20		/* bar height */
 
 /** Colors **/
+static const char bar_bg_color[]       = "#222222";	/* status bar background color */
+static const char bar_fg_color[]       = "#ffffff";	/* status bar foreground color */
+static const char bar_fg_focus_color[] = "#ff5555";	/* status bar foreground focus color */
 #define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
 #define LEFT_UNFOCUS_COLOR	"#55ff55"	/* unfocused window border color (left desktop) */
 #define RIGHT_UNFOCUS_COLOR	"#ffff55"	/* unfocused window border color (right desktop) */
