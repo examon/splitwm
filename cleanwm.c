@@ -1,4 +1,4 @@
-/* See LICENSE file for copyright and licence details */
+/* See LICENSE file for copyright and license details */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -90,6 +90,7 @@ static void maximize_current(const Arg *arg);
 static void mousemove(const Arg *arg);
 static void nextview(const Arg *arg);
 static void nextwindow(const Arg *arg);
+static void prepare_draw(void);
 static void previous_desktop(const Arg *arg);
 static void printstatus(void);
 static void removewindow(Window w);
@@ -119,8 +120,8 @@ static void maprequest(XEvent *e);
 
 /* view struct */
 typedef struct {
-	Desktop ld[DESKTOPS + 1];	/* left desktops */
-	Desktop rd[DESKTOPS + 1];	/* right desktops */
+	Desktop ld[DESKTOPS + 2];	/* left desktops */
+	Desktop rd[DESKTOPS + 2];	/* right desktops */
 	int curr_left_id;
 	int prev_left_id;
 	int curr_right_id;
@@ -141,18 +142,21 @@ static unsigned int left_win_unfocus;
 static unsigned int right_win_unfocus;
 static float split_width_x;
 static float split_height_y;
-static Window bar;
-static Pixmap buf;
-static Colormap cmap;
+static Pixmap buffer;
+static Colormap color_map;
 static Display *dpy;
 static XFontStruct *font_struct;
 static GC gc;
+static Window bar;
 static Window root;
 static Bool running = True;
-static Bool single_view_activated = False;
+static Bool both_views_actvated;
+static Bool left_view_activated;
+static Bool right_view_activated;
 static Separator separator;
 static Atom wmatoms[WM_COUNT];
 static View views[VIEWS];
+static XSetWindowAttributes wa;
 
 /** Event handlers **/
 static void (*events[LASTEvent]) (XEvent *e) = {
@@ -445,7 +449,7 @@ void client_to_view(const Arg *arg)
 	if (!(d = get_current_desktop()))
 		return;
 	c = d->curr;
-	if (!c || single_view_activated)
+	if (!c || left_view_activated || right_view_activated)
 		return;
 	if (views[cv_id].curr_desk == LEFT) {
 		views[cv_id].curr_desk = RIGHT;
@@ -481,7 +485,7 @@ void change_left_desktop(const Arg *arg)
 	Client *c;
 	Desktop *d = &views[cv_id].ld[views[cv_id].curr_left_id];
 	Desktop *n = &views[cv_id].ld[arg->i];
-
+	
 	if (arg->i == views[cv_id].curr_left_id || arg->i > DESKTOPS)
 		return;
 	if ((c = d->head)) {
@@ -496,7 +500,7 @@ void change_left_desktop(const Arg *arg)
 	}
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
-	if (single_view_activated || views[cv_id].curr_desk == LEFT)
+	if (left_view_activated || right_view_activated || views[cv_id].curr_desk == LEFT)
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
@@ -526,7 +530,7 @@ void change_right_desktop(const Arg *arg)
 	}
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
-	if (single_view_activated || views[cv_id].curr_desk == RIGHT)
+	if (left_view_activated || right_view_activated || views[cv_id].curr_desk == RIGHT)
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
@@ -616,9 +620,8 @@ void fullscreen(const Arg *arg)
 	if (!(d = get_current_desktop()))
 		return;
 	if (d->curr)
-		XMoveResizeWindow(dpy, d->curr->win, 0, 0,
-				  sw - 2 * BORDER_WIDTH,
-				  sh - 2 * BORDER_WIDTH);
+		XMoveResizeWindow(dpy, d->curr->win, 0, bar_height,
+				  sw - 2 * BORDER_WIDTH, sh - 2 * BORDER_WIDTH - bar_height);
 	/* DBG */	fprintf(stderr, "fullscreen(): OUT\n");
 }
 
@@ -627,16 +630,16 @@ void activate_left_view(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
 	split_width_x = sw + SPLIT_SEPARATOR_WIDTH / 2;
 	draw();
-	Arg a = { .i = DESKTOPS };
+	Arg a = { .i = 0 };
 	views[cv_id].curr_desk = RIGHT;
 	change_right_desktop(&a);
 	views[cv_id].curr_desk = LEFT;
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	focuscurrent();
-
-	if (single_view_activated) 
+	if (right_view_activated)
 		previous_desktop(0);
-	single_view_activated = True;
+	left_view_activated = True;
+	both_views_actvated = right_view_activated = False;
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
@@ -645,49 +648,67 @@ void activate_right_view(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
 	split_width_x = 0 - SPLIT_SEPARATOR_WIDTH / 2;
 	draw();
-	Arg a = { .i = DESKTOPS };
+	Arg a = { .i = 0 };
 	views[cv_id].curr_desk = LEFT;
 	change_left_desktop(&a);
 	views[cv_id].curr_desk = RIGHT;
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	focuscurrent();
-	
-	if (single_view_activated) 
+	if (left_view_activated)
 		previous_desktop(0);
-	single_view_activated = True;
-
+	right_view_activated = True;
+	both_views_actvated = left_view_activated = False;
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
 void activate_both_views(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_both_views(): IN\n");
+	if (both_views_actvated) {
+	/* DBG */	fprintf(stderr, "activate_both_views(): BOTH ALREADY ACTIVATED\n");
+		return;
+	}
 	split_width_x = sw / DEFAULT_WIDTH_SPLIT_COEFFICIENT;
-	if (views[cv_id].curr_desk == LEFT) {
+	if (views[cv_id].curr_desk == LEFT && left_view_activated) {
 		views[cv_id].curr_desk = RIGHT;
 		previous_desktop(0);
 		views[cv_id].curr_desk = LEFT;
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 		focuscurrent();
-		single_view_activated = False;
-	/* DBG */	fprintf(stderr, "activate_both_views(): OUT\n");
-		return;
 	/* DBG */	fprintf(stderr, "activate_both_views(): LEFT\n");
-	} else if (views[cv_id].curr_desk == RIGHT) {
+	} else if (views[cv_id].curr_desk == RIGHT && right_view_activated) {
 		views[cv_id].curr_desk = LEFT;
 		previous_desktop(0);
 		views[cv_id].curr_desk = RIGHT;
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 		focuscurrent();
-		single_view_activated = False;
 	/* DBG */	fprintf(stderr, "activate_both_views(): RIGHT\n");
 	}
+	left_view_activated = right_view_activated = False;
+	both_views_actvated = True;
 	/* DBG */	fprintf(stderr, "activate_both_views(): OUT\n");
+}
+
+void prepare_draw(void)
+{
+	/* DBG */	fprintf(stderr, "prepare_font(): IN\n");
+	color_map = DefaultColormap(dpy, screen);
+	XGCValues val;
+	val.font = XLoadFont(dpy, font);
+	font_struct = XQueryFont(dpy, val.font);
+	font_height = font_struct->ascent + 1;
+	bar_height = font_struct->ascent + font_struct->descent + 2;
+	gc = XCreateGC(dpy, root, GCFont, &val);
+	bar = XCreateSimpleWindow(dpy, root, 0, 0, sw, bar_height, 0, 0, 0);
+	buffer = XCreatePixmap(dpy, root, sw, bar_height, DefaultDepth(dpy, screen));
+	/* DBG */	fprintf(stderr, "prepare_font(): OUT\n");
 }
 
 void draw(void)
 {
 	/* DBG */	fprintf(stderr, "draw(): IN\n");
+	if (!SHOW_BAR)
+		return;
 	draw_bar();
 	draw_tags();
 	draw_title();
@@ -699,11 +720,10 @@ void draw_bar(void)
 {
 	/* DBG */	fprintf(stderr, "draw_bar(): IN\n");
 	XColor color;
-	XAllocNamedColor(dpy, cmap, bar_bg_color, &color, &color);
+	XAllocNamedColor(dpy, color_map, bar_bg_color, &color, &color);
 	XSetForeground(dpy, gc, color.pixel);
-	XFillRectangle(dpy, buf, gc, 0, 0, sw, bar_height);
-	
-	XCopyArea(dpy, buf, bar, gc, 0, 0, sw, bar_height, 0, 0);
+	XFillRectangle(dpy, buffer, gc, 0, 0, sw, bar_height);
+	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
 	XRaiseWindow(dpy, bar);
 	XFlush(dpy);
 	/* DBG */	fprintf(stderr, "draw_bar(): OUT\n");
@@ -719,11 +739,11 @@ void draw_title(void)
 		return;
 
 	XColor color;
-	XAllocNamedColor(dpy, cmap, bar_fg_color, &color, &color);
+	XAllocNamedColor(dpy, color_map, bar_fg_color, &color, &color);
 	XSetForeground(dpy, gc, color.pixel);
-	XDrawString(dpy, buf, gc, (sw / 2) - (font_struct->per_char->width * d->curr->title_len / 2), \
+	XDrawString(dpy, buffer, gc, (sw / 2) - (font_struct->per_char->width * d->curr->title_len / 2), \
 		    font_height, d->curr->title, d->curr->title_len);
-	XCopyArea(dpy, buf, bar, gc, 0, 0, sw, bar_height, 0, 0);
+	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
 	XFlush(dpy);
 	/* DBG */	fprintf(stderr, "draw_title(): OUT\n");
 }
@@ -743,25 +763,25 @@ void draw_tags(void)
 		sprintf(c, "%d", i);
 		if (views[cv_id].ld[i].head || views[cv_id].curr_left_id == i) {
 			if (views[cv_id].curr_left_id == i && views[cv_id].curr_desk == LEFT) {
-				XAllocNamedColor(dpy, cmap, bar_fg_focus_color, &color_left, &color_left);
+				XAllocNamedColor(dpy, color_map, bar_fg_focus_color, &color_left, &color_left);
 			} else {
-				XAllocNamedColor(dpy, cmap, bar_fg_color, &color_left, &color_left);
+				XAllocNamedColor(dpy, color_map, bar_fg_color, &color_left, &color_left);
 			}
 			XSetForeground(dpy, gc, color_left.pixel);
-			XDrawString(dpy, buf, gc, x_left, font_height, c, strlen(c));
-			XCopyArea(dpy, buf, bar, gc, 0, 0, sw, bar_height, 0, 0);
+			XDrawString(dpy, buffer, gc, x_left, font_height, c, strlen(c));
+			XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
 			XFlush(dpy);
 			x_left += 20;
 		}
 		if (views[cv_id].rd[i].head || views[cv_id].curr_right_id == i) {
 			if (views[cv_id].curr_right_id == i && views[cv_id].curr_desk == RIGHT) {
-				XAllocNamedColor(dpy, cmap, bar_fg_focus_color, &color_right, &color_right);
+				XAllocNamedColor(dpy, color_map, bar_fg_focus_color, &color_right, &color_right);
 			} else {
-				XAllocNamedColor(dpy, cmap, bar_fg_color, &color_right, &color_right);
+				XAllocNamedColor(dpy, color_map, bar_fg_color, &color_right, &color_right);
 			}
 			XSetForeground(dpy, gc, color_right.pixel);
-			XDrawString(dpy, buf, gc, x_right, font_height, c, strlen(c));
-			XCopyArea(dpy, buf, bar, gc, 0, 0, sw, bar_height, 0, 0);
+			XDrawString(dpy, buffer, gc, x_right, font_height, c, strlen(c));
+			XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
 			XFlush(dpy);
 			x_right -= 20;
 		}
@@ -773,18 +793,6 @@ void draw_separator(void)
 {
 	/* DBG */	fprintf(stderr, "draw_separator(): IN\n");
 	/* TODO */
-	/*
-	separator.colormap = DefaultColormap(dpy, 0);
-	separator.gc = XCreateGC(dpy, root, 0, 0);
-	XParseColor(dpy, separator.colormap, SEPARATOR_COLOR, &separator.color);
-	XAllocColor(dpy, separator.colormap, &separator.color);
-	XSetForeground(dpy, separator.gc, separator.color.pixel);
-	XFillRectangle(dpy, root, separator.gc,
-		       split_width_x - SPLIT_SEPARATOR_WIDTH / 2,
-		       0,
-		       SPLIT_SEPARATOR_WIDTH,
-		       sh);
-	*/
 	/* DBG */	fprintf(stderr, "draw_separator(): OUT\n");
 }
 
@@ -1113,6 +1121,7 @@ void mousemove(const Arg *arg)
 	int rx, ry;
 	int xw, yh;
 	unsigned int v;
+	Bool left_wall, right_wall;
 	Window w;
 	XEvent ev;
 	XWindowAttributes wa;
@@ -1134,34 +1143,19 @@ void mousemove(const Arg *arg)
 	do {
 		XMaskEvent(dpy, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
 		if (ev.type == MotionNotify) {
-			fprintf(stderr, "\trx: %d\try: %d\n", rx, ry);
 			xw = ((arg->i == MOVE) ? wa.x : wa.width) + ev.xmotion.x - rx;
 			yh = ((arg->i == MOVE) ? wa.y : wa.height) + ev.xmotion.y - ry;
-			fprintf(stderr, "\txw: %d\tyh: %d\n", xw);
-			fprintf(stderr, "\twa.width: %d\twa.height: %d\n\n", wa.width, wa.height);
-
+			left_wall = (xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2);
+			right_wall = (xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2);
 			if (arg->i == RESIZE) {
-	/* DBG */	fprintf(stderr, "in mousemotion(): RESIZE\n");
 				XResizeWindow(dpy, d->curr->win,
 					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
 					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
-			} else if (arg->i == MOVE
-				&& views[cv_id].curr_desk == LEFT
-				&& xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2
-				//&& xw > 0
-				//&& yh + wa.height + 2 * BORDER_WIDTH < split_height_y
-				// && yh > 0
-				) {
-	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE LEFT\n");
+			} else if (arg->i == MOVE && views[cv_id].curr_desk == LEFT
+				&& (left_view_activated || (!left_view_activated && left_wall))) {
 					XMoveWindow(dpy, d->curr->win, xw, yh);
-			} else if (arg->i == MOVE
-				&& views[cv_id].curr_desk == RIGHT
-				&& xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2
-				//&& xw + wa.width + 2 * BORDER_WIDTH < sw
-				//&& yh + wa.height + 2 * BORDER_WIDTH < sh
-				//&& yh > 0
-				) {
-	/* DBG */	fprintf(stderr, "in mousemotion(): MOVE RIGHT\n");
+			} else if (arg->i == MOVE && views[cv_id].curr_desk == RIGHT
+				&& (right_view_activated || (!right_view_activated && right_wall))) {
 					XMoveWindow(dpy, d->curr->win, xw, yh);
 			}
 		} else if (ev.type == MapRequest) {
@@ -1227,38 +1221,20 @@ void setup(void)
 	sw = DisplayWidth(dpy, screen);
 	sh = DisplayHeight(dpy, screen);
 
-	/* set default cursor */
+	/* prepare bar, tags, title, etc. */
+	prepare_draw();
+
+	/* set cursor, attributes, mask, etc. */
 	XDefineCursor(dpy, root, XCreateFontCursor(dpy, CURSOR));
-
-	/* set bar */
-	cmap = DefaultColormap(dpy, screen);
-	XGCValues val;
-	val.font = XLoadFont(dpy, font);
-	font_struct = XQueryFont(dpy, val.font);
-	font_height = font_struct->ascent + 1;
-	bar_height = font_struct->ascent + font_struct->descent + 2;
-	gc = XCreateGC(dpy, root, GCFont, &val);
-	
-	bar = XCreateSimpleWindow(dpy, root, 0, 0, sw, bar_height, 0, 0, 0);
-	buf = XCreatePixmap(dpy, root, sw, bar_height, DefaultDepth(dpy, screen));
-
-	XSetWindowAttributes wa;
 	wa.override_redirect = True;
 	wa.event_mask = ExposureMask;
 	XChangeWindowAttributes(dpy, bar, CWOverrideRedirect|CWEventMask, &wa);
 	XMapWindow(dpy, bar);
-	
 	wa.event_mask = SubstructureNotifyMask|SubstructureRedirectMask|PointerMotionMask|
 			EnterWindowMask|LeaveWindowMask|PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	
-	/* catch maprequests */
-	/*
-	XSelectInput(dpy, root, SubstructureNotifyMask|SubstructureRedirectMask|PointerMotionMask|
-		     EnterWindowMask|LeaveWindowMask|PropertyChangeMask);
-	*/
-
 	/* grab keys & buttons */
 	grabkeys();
 	grabbuttons();
@@ -1287,11 +1263,13 @@ void setup(void)
 
 	/* init desktops & views */
 	views[cv_id].curr_desk = LEFT;
+	views[cv_id].prev_left_id = DEFAULT_LEFT_DESKTOP;
 	views[cv_id].curr_left_id = DEFAULT_LEFT_DESKTOP;
+	views[cv_id].prev_right_id = DEFAULT_RIGHT_DESKTOP;
 	views[cv_id].curr_right_id = DEFAULT_RIGHT_DESKTOP;
 
 	unsigned int i;
-	for (i = 0; i < DESKTOPS; i++) {
+	for (i = 0; i <= DESKTOPS; i++) {
 		views[cv_id].ld[i].head = NULL;
 		views[cv_id].rd[i].head = NULL;
 		views[cv_id].ld[i].curr = NULL;
@@ -1306,6 +1284,11 @@ void setup(void)
 	change_left_desktop(&a);
 	change_right_desktop(&b);
 
+	/* default views */
+	left_view_activated = False;
+	right_view_activated = False;
+	both_views_actvated = True;
+
 	if (VIEWS_ACTIVATED) {
 		if (DEFAULT_FOCUSED_VIEW == LEFT) {
 			activate_left_view(0);
@@ -1314,7 +1297,7 @@ void setup(void)
 		}
 	}
 
-	/* draw bar, separator, ... */
+	/* draw bar, tags, title, separator, etc. */
 	draw();
 
 	/* DBG */	fprintf(stderr, "setup(): OUT\n");

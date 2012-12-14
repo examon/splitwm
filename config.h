@@ -1,4 +1,4 @@
-/* See LICENSE file for copyright and licence details */
+/* See LICENSE file for copyright and license details */
 
 #ifndef CONFIG_H
 #define CONFIG_H
@@ -30,9 +30,8 @@ static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 #define DEFAULT_HEIGHT_SPLIT_COEFFICIENT  1    	/* screen height split coefficient, 2 == 1/2 screen heigth */
 #define SEPARATOR_INCREASE	20		/* separator increase motion distance */
 #define SEPARATOR_DECREASE	20		/* separator decrease motion distance */
-#define VIEWS_ACTIVATED		True		/* True if you want to activate views at start */
+#define VIEWS_ACTIVATED		False		/* True if you want to activate views at start */
 #define SHOW_BAR		True		/* True if you want to show bar */
-#define BAR_HEIGHT		20		/* bar height */
 
 /** Colors **/
 static const char bar_bg_color[]       = "#222222";	/* status bar background color */
@@ -68,6 +67,7 @@ static Key keys[] = {
 	{  MOD1,             XK_t,          tile_current,           { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
+	{  MOD4,             XK_Tab,        previous_desktop,       { 0 }},
 	{  MOD1,             XK_i,          status,                 { 0 }},
 	{  MOD1|SHIFT,	     XK_h,	    separator_decrease,	    { 0 }},
 	{  MOD1|SHIFT,	     XK_l,	    separator_increase,     { 0 }},
