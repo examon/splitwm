@@ -1145,18 +1145,31 @@ void mousemove(const Arg *arg)
 		if (ev.type == MotionNotify) {
 			xw = ((arg->i == MOVE) ? wa.x : wa.width) + ev.xmotion.x - rx;
 			yh = ((arg->i == MOVE) ? wa.y : wa.height) + ev.xmotion.y - ry;
-			left_wall = (xw + wa.width + 2 * BORDER_WIDTH < split_width_x - SPLIT_SEPARATOR_WIDTH / 2);
-			right_wall = (xw > split_width_x + SPLIT_SEPARATOR_WIDTH / 2);
+			left_wall = (xw + wa.width + 2 * BORDER_WIDTH \
+				   < split_width_x + split_width_x / 10 - SPLIT_SEPARATOR_WIDTH / 2);
+			right_wall = (xw > split_width_x - split_width_x / 10 + SPLIT_SEPARATOR_WIDTH / 2);
 			if (arg->i == RESIZE) {
 				XResizeWindow(dpy, d->curr->win,
 					      (xw > MIN_WINDOW_SIZE) ? xw : wa.width,
 					      (yh > MIN_WINDOW_SIZE) ? yh : wa.height);
-			} else if (arg->i == MOVE && views[cv_id].curr_desk == LEFT
-				&& (left_view_activated || (!left_view_activated && left_wall))) {
+			} else if (arg->i == MOVE && views[cv_id].curr_desk == LEFT) {
+				if (left_view_activated || (!left_view_activated && left_wall)) {
 					XMoveWindow(dpy, d->curr->win, xw, yh);
-			} else if (arg->i == MOVE && views[cv_id].curr_desk == RIGHT
-				&& (right_view_activated || (!right_view_activated && right_wall))) {
+				} else if (!left_view_activated && !left_wall) {
+					client_to_view(0);
+					XUngrabPointer(dpy, CurrentTime);
+					draw();
+					return;
+				}
+			} else if (arg->i == MOVE && views[cv_id].curr_desk == RIGHT) {
+				if (right_view_activated || (!right_view_activated && right_wall)) {
 					XMoveWindow(dpy, d->curr->win, xw, yh);
+				} else if (!right_view_activated && !right_wall) {
+					client_to_view(0);
+					XUngrabPointer(dpy, CurrentTime);
+					draw();
+					return;
+				}
 			}
 		} else if (ev.type == MapRequest) {
 			events[ev.type](&ev);
