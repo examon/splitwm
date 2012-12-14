@@ -15,7 +15,7 @@ static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 #define CURSOR		XC_left_ptr	/* default cursor */
 
 /** Settings **/
-#define DESKTOPS		10		/* number of desktops */	
+#define DESKTOPS		5		/* number of desktops */	
 #define DEFAULT_LEFT_DESKTOP	1		/* defualt left desktop */
 #define DEFAULT_RIGHT_DESKTOP	1		/* defualt right desktop */
 #define VIEWS			10		/* number of views */
@@ -75,7 +75,6 @@ static Key keys[] = {
 	{  MOD1,             XK_p,          spawn,                  { .com = spawn_dmenu }},
 	{  MOD4,             XK_p,          spawn,                  { .com = spawn_dmenu }},
 	
-	{  MOD4,             XK_0,          change_left_desktop,    { .i = 0 }},
 	{  MOD4,             XK_1,          change_left_desktop,    { .i = 1 }},
 	{  MOD4,             XK_2,          change_left_desktop,    { .i = 2 }},
 	{  MOD4,             XK_3,          change_left_desktop,    { .i = 3 }},
@@ -86,7 +85,6 @@ static Key keys[] = {
 	{  MOD4,             XK_8,          change_left_desktop,    { .i = 8 }},
 	{  MOD4,             XK_9,          change_left_desktop,    { .i = 9 }},
 
-	{  MOD1,             XK_0,          change_right_desktop,   { .i = 0 }},
 	{  MOD1,             XK_1,          change_right_desktop,   { .i = 1 }},
 	{  MOD1,             XK_2,          change_right_desktop,   { .i = 2 }},
 	{  MOD1,             XK_3,          change_right_desktop,   { .i = 3 }},
@@ -97,7 +95,6 @@ static Key keys[] = {
 	{  MOD1,             XK_8,          change_right_desktop,   { .i = 8 }},
 	{  MOD1,             XK_9,          change_right_desktop,   { .i = 9 }},
 	
-	CLIENT_TO_DESKTOP(   XK_0,                                    0)
 	CLIENT_TO_DESKTOP(   XK_1,                                    1)
 	CLIENT_TO_DESKTOP(   XK_2,                                    2)
 	CLIENT_TO_DESKTOP(   XK_3,                                    3)
