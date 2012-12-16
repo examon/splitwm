@@ -5,6 +5,48 @@
 
 /** Font **/
 static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
+static const unsigned int top_font_offset = 2;
+static const unsigned int bottom_font_offset = 4;
+
+/** Bar **/
+static const Bool show_bar = True;	/* False to hide bar */
+
+/** Views **/
+static const char *tags_views[] = { "one", "two", "three" };
+static const unsigned int default_view	       = 1;		/* default view */
+static const unsigned int default_focused_view  = NONE;		/* LEFT, RIGHT or NONE */
+static const unsigned int def_width_split_coef  = 2;		/* screen width split coefficient, 2 == 1/2 screen width */
+static const unsigned int def_height_split_coef = 1;		/* screen height split coefficient, 2 == 1/2 screen height */
+
+/** Desktops **/
+static const char *tags_left[]  = { "term", "web", "test", "code" };
+static const char *tags_right[] = { "1", "2", "devel" };
+static const char *curr_desk_symbol[]  = { "=>>", "<--" };	/* symbol for left & right current desktop */
+static const unsigned int default_left_desktop  = 1;
+static const unsigned int default_right_desktop = 1;
+static const unsigned int master_size = 0;	/* master window size, if 0 then master_size = screen_width / 2 */
+
+/** Window **/
+static const unsigned int border_width    = 4;		/* window border width */
+static const unsigned int border_offset   = 4;		/* spaces betweed windows borders */
+static const unsigned int min_window_size = 10;		/* minimum window size */
+
+/** Separator **/
+static const unsigned int separator_width = 10;		/* width of the split seperator */
+static const unsigned int separator_inc   = 10;		/* separator increase distance */
+static const unsigned int separator_dec   = 10;		/* separator decrease distance */
+
+/** Colors **/
+static const char focus_color[]         = "#ff5555";	/* focused window border color (any desktop) */
+static const char left_unfocus_color[]  = "#ffdd0e";	/* unfocused window border color (left desktop) */
+static const char right_unfocus_color[] = "#55ff55";	/* unfocused window border color (right desktop) */
+static const char bar_bg_color[]        = "#1b1b1b";	/* status bar background color */
+static const char bar_tag_color[]       = "#7b7b7b";	/* status bar tag color */
+static const char bar_title_color[]     = "#bbbbbb";	/* status bar title color */
+
+/** Commands **/
+static const char *spawn_terminal[] = { "urxvt", NULL };
+static const char *spawn_dmenu[]    = { "dmenu_run", NULL };
 
 /** Modifiers **/
 #define MOD1		Mod1Mask	/* ALT key */
@@ -13,38 +55,6 @@ static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 
 /** Cursor **/
 #define CURSOR		XC_left_ptr	/* default cursor */
-
-/** Settings **/
-#define DESKTOPS		5		/* number of desktops */	
-#define DEFAULT_LEFT_DESKTOP	1		/* defualt left desktop */
-#define DEFAULT_RIGHT_DESKTOP	1		/* defualt right desktop */
-#define VIEWS			10		/* number of views */
-#define DEFAULT_VIEW		1		/* default view */
-#define DEFAULT_FOCUSED_VIEW	LEFT		/* LEFT/RIGHT */
-#define BORDER_WIDTH		2		/* window border width */
-#define BORDER_OFFSET		0		/* spaces betweed windows borders */
-#define MASTER_SIZE		0		/* master window size, if 0 then MASTER_SIZE = screen_width / 2 */
-#define MIN_WINDOW_SIZE 	10		/* minimum window size in pixels */
-#define SPLIT_SEPARATOR_WIDTH	2		/* width of the split seperator */
-#define DEFAULT_WIDTH_SPLIT_COEFFICIENT	  2	/* screen width split coefficient, 2 == 1/2 screen width */
-#define DEFAULT_HEIGHT_SPLIT_COEFFICIENT  1    	/* screen height split coefficient, 2 == 1/2 screen heigth */
-#define SEPARATOR_INCREASE	20		/* separator increase motion distance */
-#define SEPARATOR_DECREASE	20		/* separator decrease motion distance */
-#define VIEWS_ACTIVATED		False		/* True if you want to activate views at start */
-#define SHOW_BAR		True		/* True if you want to show bar */
-
-/** Colors **/
-static const char bar_bg_color[]       = "#222222";	/* status bar background color */
-static const char bar_fg_color[]       = "#ffffff";	/* status bar foreground color */
-static const char bar_fg_focus_color[] = "#ff5555";	/* status bar foreground focus color */
-#define FOCUS_COLOR		"#ff5555"	/* focused window border color (any desktop) */
-#define LEFT_UNFOCUS_COLOR	"#55ff55"	/* unfocused window border color (left desktop) */
-#define RIGHT_UNFOCUS_COLOR	"#ffff55"	/* unfocused window border color (right desktop) */
-#define SEPARATOR_COLOR		"#ff0000"	/* screen separator color */
-
-/** Commands **/
-static const char *spawn_terminal[] = { "urxvt", NULL };
-static const char *spawn_dmenu[]    = { "dmenu_run", NULL };
 
 /** Anti-multiple paste macro **/
 #define CLIENT_TO_DESKTOP(K, N) \
@@ -68,9 +78,8 @@ static Key keys[] = {
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
 	{  MOD4,             XK_Tab,        previous_desktop,       { 0 }},
-	{  MOD1,             XK_i,          status,                 { 0 }},
-	{  MOD1|SHIFT,	     XK_h,	    separator_decrease,	    { 0 }},
-	{  MOD1|SHIFT,	     XK_l,	    separator_increase,     { 0 }},
+	{  MOD1|SHIFT,       XK_h,          separator_decrease,     { 0 }},
+	{  MOD1|SHIFT,       XK_l,          separator_increase,     { 0 }},
 	{  MOD1,             XK_Return,     spawn,                  { .com = spawn_terminal }},
 	{  MOD1,             XK_p,          spawn,                  { .com = spawn_dmenu }},
 	{  MOD4,             XK_p,          spawn,                  { .com = spawn_dmenu }},
