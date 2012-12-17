@@ -64,6 +64,7 @@ static void activate_right_view(const Arg *arg);
 static void addwindow(Window w);
 static void change_left_desktop(const Arg *arg);
 static void change_right_desktop(const Arg *arg);
+static void change_view(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
 static void client_to_view(const Arg *arg);
 static void draw(void);
@@ -441,9 +442,10 @@ void client_to_view(const Arg *arg)
 	/* DBG */	fprintf(stderr, "client_to_view(): OUT\n");
 }
 
-void change_view(const Arg *arg) {
+void change_view(const Arg *arg)
+{
 	/* DBG */	fprintf(stderr, "change_view(): IN\n");
-
+	/* DBG */	fprintf(stderr, "change_view(): %d\n", arg->i);
 	/* DBG */	fprintf(stderr, "change_views(): OUT\n");
 }
 
@@ -609,30 +611,30 @@ void activate_left_view(const Arg *arg)
 	views[cv_id].curr_desk = RIGHT;
 	change_right_desktop(&a);
 	views[cv_id].curr_desk = LEFT;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	focuscurrent();
 	if (right_view_activated)
 		previous_desktop(0);
 	left_view_activated = True;
 	both_views_actvated = right_view_activated = False;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
 void activate_right_view(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
-	split_width_x = 0 - separator_width / 2;
+	split_width_x = 0;
 	draw();
 	Arg a = { .i = 0 };
 	views[cv_id].curr_desk = LEFT;
 	change_left_desktop(&a);
 	views[cv_id].curr_desk = RIGHT;
-	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	focuscurrent();
 	if (left_view_activated)
 		previous_desktop(0);
 	right_view_activated = True;
 	both_views_actvated = left_view_activated = False;
+	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
@@ -800,7 +802,9 @@ void draw_separator(void)
 void separator_increase(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "separator_increase(): IN\n");
-	if (split_width_x + separator_inc < sw) {
+	if (!both_views_actvated)
+		return;
+	if (split_width_x + min_window_size + 2 * separator_inc < sw) {
 		split_width_x += separator_inc;
 	}
 	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
@@ -818,7 +822,9 @@ void separator_increase(const Arg *arg)
 void separator_decrease(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "separator_decrease(): IN\n");
-	if (split_width_x - separator_dec > min_window_size)
+	if (!both_views_actvated)
+		return;
+	if (split_width_x > min_window_size + 2 * separator_dec)
 		split_width_x -= separator_dec;
 	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
 	draw();
@@ -835,19 +841,20 @@ void separator_decrease(const Arg *arg)
 void maximize(Window w)
 {
 	/* DBG */	fprintf(stderr, "maximize(): IN\n");
+	int sep = ((right_view_activated) ? (0) : (separator_width / 2));
+	int wx, wy, ww, wh;
 	if (views[cv_id].curr_desk == LEFT) {
-		XMoveResizeWindow(dpy, w,
-				  border_offset,
-				  border_offset + (show_bar ? (bar_height) : (0)),
-				  split_width_x - 2 * border_width - 2 * border_offset - separator_width / 2,
-				  split_height_y - 2 * border_width - 2 * border_offset);
+		wx = border_offset;
+		wy = border_offset + (show_bar ? (bar_height) : (0));
+		ww = split_width_x - 2 * border_width - 2 * border_offset - separator_width / 2;
+		wh = split_height_y - 2 * border_width - 2 * border_offset;
+		move_resize_window(w, wx, wy, ww, wh);
 	} else if (views[cv_id].curr_desk == RIGHT) {
-		XMoveResizeWindow(dpy, w,
-				  split_width_x + border_offset + separator_width / 2,
-				  border_offset + (show_bar ? (bar_height) : (0)),
-				  sw  - split_width_x - 2 * border_width \
-				  - 2 * border_offset - separator_width / 2,
-				  split_height_y - 2 * border_width - 2 * border_offset);
+		wx = split_width_x + border_offset + sep;
+		wy = border_offset + (show_bar ? (bar_height) : (0));
+		ww = sw  - split_width_x - 2 * border_width - 2 * border_offset - sep;
+		wh = split_height_y - 2 * border_width - 2 * border_offset;
+		move_resize_window(w, wx, wy, ww, wh);
 	}
 	/* DBG */	fprintf(stderr, "maximize(): OUT\n");
 }
@@ -1081,6 +1088,7 @@ void tile(Desktop *d)
 	int bar = (show_bar ? (bar_height) : (0));
 	int y = bar;
 	int wx, wy, ww, wh;
+	int sep = ((right_view_activated) ? (0) : (separator_width / 2));
 
 	if (d->head && !d->head->next) {
 		maximize(d->head->win);
@@ -1104,9 +1112,9 @@ void tile(Desktop *d)
 			wh = split_height_y / n  - 2 * border_offset - 2 * border_width;
 			move_resize_window(c->win, wx, wy, ww, wh);
 			y += split_height_y / n;
-		}	
+		}
 	} else if (d->head && views[cv_id].curr_desk == RIGHT) {
-		wx = split_width_x + border_offset + separator_width / 2;
+		wx = split_width_x + border_offset + sep;
 		wy = border_offset + bar;
 		ww = d->master_size - 2 * border_offset - 2 * border_width;
 		wh = split_height_y - 2 * border_width - 2 * border_offset;
@@ -1117,14 +1125,14 @@ void tile(Desktop *d)
 		for (c = d->head; c; c = c->next) {
 			if (c == d->curr)
 				continue;
-			wx = split_width_x + d->master_size + separator_width / 2;
+			wx = split_width_x + d->master_size + sep;
 			wy = y + border_offset;
 			ww = sw - split_width_x - d->master_size - 2 * border_width \
-			     - border_offset - separator_width / 2,
+			     - border_offset - sep;
 			wh = split_height_y / n - 2 * border_width - 2 * border_offset;
 			move_resize_window(c->win, wx, wy, ww, wh);
 			y += split_height_y / n;
-		}	
+		}
 	}
 	/* DBG */	fprintf(stderr, "tile(): OUT\n");
 }
