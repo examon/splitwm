@@ -12,7 +12,7 @@ static const unsigned int bottom_font_offset = 4;
 static const Bool show_bar = True;	/* False to hide bar */
 
 /** Views **/
-static const char *tags_views[] = { "one", "two", "three" };
+static const char *tags_views[] = { "> 1 <", "= 2 =", "- 3 -" };
 static const unsigned int default_view          = 1;		/* default view */
 static const unsigned int default_focused_view  = NONE;		/* LEFT, RIGHT or NONE */
 static const unsigned int def_width_split_coef  = 2;		/* screen width split coefficient, 2 == 1/2 screen width */
