@@ -494,18 +494,18 @@ void change_left_desktop(const Arg *arg)
 
 	if (arg->i == views[cv_id].curr_left_id || arg->i > DESKTOPS_LEFT)
 		return;
-	if (views[cv_id].curr_desk == RIGHT && views[cv_id].right_view_activated)
-		activate_left_view(0);
+	if (views[cv_id].curr_desk == RIGHT && views[cv_id].right_view_activated) {
+		return;
+	}
 	for (c = d->head; d->head && c; c = c->next)
 		XUnmapWindow(dpy, c->win);
 	for (c = n->head; n->head && c; c = c->next)
-			XMapWindow(dpy, c->win);
+		XMapWindow(dpy, c->win);
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
 	if (views[cv_id].left_view_activated || views[cv_id].right_view_activated
-	 || views[cv_id].curr_desk == LEFT) {
+	 || views[cv_id].curr_desk == LEFT)
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	}
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
 	/* DBG */	printstatus();
@@ -522,8 +522,9 @@ void change_right_desktop(const Arg *arg)
 
 	if (arg->i == views[cv_id].curr_right_id || arg->i > DESKTOPS_RIGHT)
 		return;
-	if (views[cv_id].curr_desk == LEFT && views[cv_id].left_view_activated)
-		activate_right_view(0);
+	if (views[cv_id].curr_desk == LEFT && views[cv_id].left_view_activated) {
+		return;
+	}
 	for (c = d->head; d->head && c; c = c->next)
 		XUnmapWindow(dpy, c->win);
 	for (c = n->head; n->head && c; c = c->next)
@@ -631,38 +632,47 @@ void fullscreen(const Arg *arg)
 void activate_left_view(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
+	if (views[cv_id].right_view_activated)
+		activate_both_views(0);
+	if (!views[cv_id].both_views_activated)
+		return;
+	if (views[cv_id].curr_desk == RIGHT)
+		nextview(0);
+
 	split_width_x = sw + separator_width / 2;
 	draw();
 	Arg a = { .i = 0 };
-	views[cv_id].curr_desk = RIGHT;
 	change_right_desktop(&a);
-	views[cv_id].curr_desk = LEFT;
-	focuscurrent();
-	if (views[cv_id].right_view_activated)
-		previous_desktop(0);
+
 	views[cv_id].left_view_activated = True;
 	views[cv_id].both_views_activated = False;
 	views[cv_id].right_view_activated = False;
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	focuscurrent();
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
 void activate_right_view(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
+	if (views[cv_id].left_view_activated)
+		activate_both_views(0);
+	if (!views[cv_id].both_views_activated)
+		return;
+	if (views[cv_id].curr_desk == LEFT)
+		nextview(0);
+
 	split_width_x = 0;
 	draw();
 	Arg a = { .i = 0 };
-	views[cv_id].curr_desk = LEFT;
 	change_left_desktop(&a);
-	views[cv_id].curr_desk = RIGHT;
-	focuscurrent();
-	if (views[cv_id].left_view_activated)
-		previous_desktop(0);
+
 	views[cv_id].right_view_activated = True;
 	views[cv_id].both_views_activated = False;
 	views[cv_id].left_view_activated = False;
+
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	focuscurrent();
 	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
 }
 
@@ -692,6 +702,7 @@ void activate_both_views(const Arg *arg)
 	views[cv_id].left_view_activated = False;
 	views[cv_id].right_view_activated = False;
 	views[cv_id].both_views_activated = True;
+	tile_current(0);
 	/* DBG */	fprintf(stderr, "activate_both_views(): OUT\n");
 }
 
