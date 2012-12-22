@@ -82,6 +82,8 @@ Desktop *get_current_desktop(void);
 static void grabbuttons(void);
 static void grabkeys(void);
 static void kill_client(const Arg *arg);
+static void master_size_increase(const Arg *arg);
+static void master_size_decrease(const Arg *arg);
 static void maximize(Window w);
 static void maximize_current(const Arg *arg);
 static void mousemove(const Arg *arg);
@@ -141,9 +143,13 @@ static int cv_id;	/* current view ID */
 static int pv_id;	/* previous view ID */
 static unsigned int def_left;
 static unsigned int def_right;
+static unsigned int def_view;
 static unsigned int left_win_unfocus;
 static unsigned int right_win_unfocus;
 static unsigned int win_focus;
+static const unsigned int bottom_font_offset = 5;
+static const unsigned int min_window_size = 20;
+static const unsigned int top_font_offset = 3;
 static Pixmap buffer;
 static Colormap color_map;
 static Display *dpy;
@@ -684,12 +690,14 @@ void activate_both_views(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_both_views(): BOTH ALREADY ACTIVATED\n");
 		return;
 	}
-	views[cv_id].split_width_x = sw / def_width_split_coef;
+	views[cv_id].split_width_x = sw / 2;
 	if (views[cv_id].curr_desk == LEFT && views[cv_id].left_view_activated) {
 		views[cv_id].curr_desk = RIGHT;
 		previous_desktop(0);
 		views[cv_id].curr_desk = LEFT;
 		views[cv_id].ld[views[cv_id].curr_left_id].layout = TILE;
+		views[cv_id].ld[views[cv_id].curr_left_id].master_size =
+			 ((master_size != 0) ? (master_size) : (views[cv_id].split_width_x / 2));
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	/* DBG */	fprintf(stderr, "activate_both_views(): LEFT\n");
 	} else if (views[cv_id].curr_desk == RIGHT && views[cv_id].right_view_activated) {
@@ -697,6 +705,8 @@ void activate_both_views(const Arg *arg)
 		previous_desktop(0);
 		views[cv_id].curr_desk = RIGHT;
 		views[cv_id].rd[views[cv_id].curr_right_id].layout = TILE;
+		views[cv_id].rd[views[cv_id].curr_right_id].master_size =
+			 ((master_size != 0) ? (master_size) : (views[cv_id].split_width_x / 2));
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	/* DBG */	fprintf(stderr, "activate_both_views(): RIGHT\n");
 	}
@@ -923,17 +933,15 @@ void separator_increase(const Arg *arg)
 	/* DBG */	fprintf(stderr, "separator_increase(): IN\n");
 	if (!views[cv_id].both_views_activated)
 		return;
-	if (views[cv_id].split_width_x + min_window_size + 2 * separator_inc < sw) {
+	if (views[cv_id].split_width_x + views[cv_id].rd[views[cv_id].curr_right_id].master_size
+	  < sw - min_window_size - separator_inc + separator_width)
 		views[cv_id].split_width_x += separator_inc;
-	}
-	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", views[cv_id].split_width_x);
-	draw();
+	views[cv_id].rd[views[cv_id].curr_right_id].master_size = (sw - views[cv_id].split_width_x) / 2;
+	views[cv_id].ld[views[cv_id].curr_left_id].master_size = views[cv_id].split_width_x / 2;
 	if (views[cv_id].curr_desk == LEFT)
 		views[cv_id].curr_desk = RIGHT;
-	views[cv_id].rd[views[cv_id].curr_right_id].master_size -= 10;
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	views[cv_id].curr_desk = LEFT;
-	views[cv_id].ld[views[cv_id].curr_left_id].master_size += 10;
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	/* DBG */	fprintf(stderr, "separator_increase(): OUT\n");
 }
@@ -945,16 +953,43 @@ void separator_decrease(const Arg *arg)
 		return;
 	if (views[cv_id].split_width_x > min_window_size + 2 * separator_dec)
 		views[cv_id].split_width_x -= separator_dec;
-	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", views[cv_id].split_width_x);
-	draw();
-	if (views[cv_id].curr_desk == RIGHT)
-		views[cv_id].curr_desk = LEFT;
-	views[cv_id].ld[views[cv_id].curr_left_id].master_size -= 10;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	views[cv_id].curr_desk = RIGHT;
-	views[cv_id].rd[views[cv_id].curr_right_id].master_size += 10;
+	views[cv_id].rd[views[cv_id].curr_right_id].master_size = (sw - views[cv_id].split_width_x) / 2;
+	views[cv_id].ld[views[cv_id].curr_left_id].master_size = views[cv_id].split_width_x / 2;
+	if (views[cv_id].curr_desk == LEFT)
+		views[cv_id].curr_desk = RIGHT;
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	views[cv_id].curr_desk = LEFT;
+	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	/* DBG */	fprintf(stderr, "separator_decrease(): OUT\n");
+}
+
+void master_size_increase(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "master_size_increase(): IN\n");
+	Desktop *d = NULL;
+	if (!(d = get_current_desktop()))
+		return;
+	if ((views[cv_id].curr_desk == LEFT && d->master_size + 2 * master_size_inc > views[cv_id].split_width_x)
+	 || (views[cv_id].curr_desk == RIGHT && views[cv_id].split_width_x + d->master_size + 2 * master_size_inc > sw))
+		return;
+	d->master_size += master_size_inc;
+	tile(d);
+	/* DBG */	fprintf(stderr, "master_size_increase(): OUT\n");
+}
+
+void master_size_decrease(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "master_size_decrease(): IN\n");
+	Desktop *d = NULL;
+	if (!(d = get_current_desktop()))
+		return;
+	if ((views[cv_id].curr_desk == LEFT && d->master_size < 2 * master_size_dec)
+	 || (views[cv_id].curr_desk == RIGHT && views[cv_id].split_width_x + d->master_size
+	   < views[cv_id].split_width_x + 2 * master_size_dec))
+		return;
+	d->master_size -= master_size_dec;
+	tile(d);
+	/* DBG */	fprintf(stderr, "master_size_decrease(): OUT\n");
 }
 
 void maximize(Window w)
@@ -1422,7 +1457,8 @@ void setup(void)
 	XSync(dpy, False);
 
 	/* current & previouse view init */
-	cv_id = default_view;
+	def_view = ((default_view > 0 && default_view <= VIEWS) ? (default_view) : (1));
+	cv_id = def_view;
 	pv_id = cv_id;
 
 	/* init desktops & views */
@@ -1440,8 +1476,8 @@ void setup(void)
 		views[i].curr_left_id = views[i].prev_left_id = def_left;
 		views[i].curr_right_id = views[i].prev_right_id = def_right;
 		views[i].curr_desk = LEFT;
-		views[i].split_width_x = sw / def_width_split_coef;
-		views[i].split_height_y = sh / def_height_split_coef - (show_bar ? (bar_height) : (0));
+		views[i].split_width_x = sw / 2;
+		views[i].split_height_y = sh - (show_bar ? (bar_height) : (0));
 	}
 
 	for (i = 1; i <= VIEWS; i++) {
@@ -1459,7 +1495,7 @@ void setup(void)
 		}
 	}
 
-	Arg a = { .i = default_view };
+	Arg a = { .i = def_view };
 	change_view(&a);
 
 	/* draw bar, tags, title, separator, etc. */
