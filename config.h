@@ -10,17 +10,19 @@ static const unsigned int bottom_font_offset = 5;
 
 /** Bar **/
 static const unsigned int char_space = 5; 	/* Spaces betweed bar tags */
-static const Bool show_bar = True;	/* False to hide bar */
+static const Bool show_bar = True;		/* False to hide bar */
+static const char *tile_tag = "[T]";		/* Tile tag shown in bar */
+static const char *float_tag = "[F]";		/* Float tag shown in bar */
+
 
 /** Views **/
-static const char *tags_views[] = { "one", "two", "three", "four" };	/* max 9 */
+static const char *tags_views[] = { "1", "2", "3" };	/* max 9 */
 static const unsigned int default_view           = 1;		/* default view */
-static const unsigned int default_focus          = NONE;	/* LEFT, RIGHT or NONE */
 static const unsigned int def_width_split_coef   = 2;		/* screen width split coefficient, 2 == 1/2 screen width */
 static const unsigned int def_height_split_coef  = 1;		/* screen height split coefficient, 2 == 1/2 screen height */
 
 /** Desktops **/
-static const char *tags_left[]  = { "www", "term", "im", "devel", "stuff" };	/* max 9 */
+static const char *tags_left[]  = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
 static const char *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
 static const unsigned int default_left_desktop  = 1;
 static const unsigned int default_right_desktop = 1;
@@ -28,7 +30,7 @@ static const unsigned int master_size = 0;	/* master window size, if 0 then mast
 
 /** Window **/
 static const unsigned int border_width    = 2;		/* window border width */
-static const unsigned int border_offset   = 0;		/* spaces betweed windows borders */
+static const unsigned int border_offset   = 2;		/* spaces betweed windows borders */
 static const unsigned int min_window_size = 20;		/* minimum window size */
 
 /** Separator **/
