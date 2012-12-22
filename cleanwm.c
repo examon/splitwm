@@ -122,6 +122,8 @@ typedef struct {
 	int curr_right_id;
 	int prev_right_id;
 	int curr_desk;		/* current view, LEFT/RIGHT */
+	float split_width_x;
+	float split_height_y;
 	Bool both_views_activated;
 	Bool left_view_activated;
 	Bool right_view_activated;
@@ -140,8 +142,6 @@ static unsigned int def_right;
 static unsigned int left_win_unfocus;
 static unsigned int right_win_unfocus;
 static unsigned int win_focus;
-static float split_width_x;
-static float split_height_y;
 static Pixmap buffer;
 static Colormap color_map;
 static Display *dpy;
@@ -392,9 +392,13 @@ void client_to_desktop(const Arg *arg)
 		return;
 	if (views[cv_id].curr_desk == LEFT) {
 		tmp_id = views[cv_id].curr_left_id;
+		if (tmp_id == arg->i || arg->i > DESKTOPS_LEFT)
+			return;
 		views[cv_id].curr_left_id = arg->i;
 	} else {
 		tmp_id = views[cv_id].curr_right_id;
+		if (tmp_id == arg->i || arg->i > DESKTOPS_RIGHT)
+			return;
 		views[cv_id].curr_right_id = arg->i;
 	}
 	addwindow(c->win);
@@ -408,7 +412,6 @@ void client_to_desktop(const Arg *arg)
 	removewindow(d->curr->win);
 	tile(d);
 	focuscurrent();
-	
 	/* DBG */	fprintf(stderr, "client_to_desktop(): OUT\n");
 }
 
@@ -448,38 +451,56 @@ void change_view(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "change_view(): IN\n");
 	/* DBG */	fprintf(stderr, "change_view(): %d\n", arg->i);
+	/* DBG */	//fprintf(stderr, "change_view(): BOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	//fprintf(stderr, "change_view(): LEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	//fprintf(stderr, "change_view(): RIGHT %d\n", views[cv_id].right_view_activated);
+
 	Client *c = NULL;
 	Desktop *ld = &views[cv_id].ld[views[cv_id].curr_left_id];
 	Desktop *rd = &views[cv_id].rd[views[cv_id].curr_right_id];
 	Desktop *ln = &views[arg->i].ld[views[arg->i].curr_left_id];
 	Desktop *rn = &views[arg->i].rd[views[arg->i].curr_right_id];
 
+	/*
 	if (arg->i == cv_id || arg->i > VIEWS)
 		return;
-	for ( c = ld->head; ld->head && c; c = c->next)
+	*/
+	if (arg->i > VIEWS)
+		return;
+	for (c = ld->head; ld->head && c; c = c->next)
 		XUnmapWindow(dpy, c->win);
-	for ( c = rd->head; rd->head && c; c = c->next)
+	for (c = rd->head; rd->head && c; c = c->next)
 		XUnmapWindow(dpy, c->win);
-	for ( c = ln->head; ln->head && c; c = c->next)
+	for (c = ln->head; ln->head && c; c = c->next)
 		XMapWindow(dpy, c->win);
-	for ( c = rn->head; rn->head && c; c = c->next)
+	for (c = rn->head; rn->head && c; c = c->next)
 		XMapWindow(dpy, c->win);
+
 	pv_id = cv_id;
 	cv_id = arg->i;
-	Arg a = { .i = def_left };
-	Arg b = { .i = def_right };
+	Arg a = { .i = views[cv_id].curr_left_id };
+	Arg b = { .i = views[cv_id].curr_right_id };
 	change_left_desktop(&a);
 	change_right_desktop(&b);
-	/* TODO
-	if (views[cv_id].both_views_activated) {
+
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\t%d\n", arg->i);
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\tBOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\tLEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\tRIGHT %d\n", views[cv_id].right_view_activated);
+
+	if (views[arg->i].both_views_activated) {
 		activate_both_views(0);
-	} else if (views[cv_id].left_view_activated) {
+	} else if (views[arg->i].left_view_activated) {
 		activate_left_view(0);
-	} else if (views[cv_id].right_view_activated){
+	} else if (views[arg->i].right_view_activated) {
 		activate_right_view(0);
 	}
-	*/
-	activate_both_views(0);
+
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\t%d\n", arg->i);
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\tBOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\tLEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	fprintf(stderr, "change_view(): \t\t\tRIGHT %d\n", views[cv_id].right_view_activated);
+
 	draw();
 	/* DBG */	fprintf(stderr, "change_views(): OUT\n");
 }
@@ -631,30 +652,58 @@ void fullscreen(const Arg *arg)
 
 void activate_left_view(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
+	/* DBG */	fprintf(stderr, "activate_left_view(): IN\n");
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\t%d\n", cv_id);
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\tBOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\tLEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\tRIGHT %d\n", views[cv_id].right_view_activated);
+
+	if (!views[cv_id].ld[views[cv_id].curr_left_id].head && views[cv_id].both_views_activated) {
+	/* DBG */	fprintf(stderr, "activate_left_view(): BYE 0\n");
+		return;
+	}
 	if (views[cv_id].right_view_activated)
 		activate_both_views(0);
-	if (!views[cv_id].both_views_activated)
+	if (!views[cv_id].both_views_activated) {
+	/* DBG */	fprintf(stderr, "activate_left_view(): BYE 1\n");
 		return;
+	}
 	if (views[cv_id].curr_desk == RIGHT)
 		nextview(0);
+	/* DBG */	fprintf(stderr, "activate_left_view(): BYE 2\n");
 
-	split_width_x = sw + separator_width / 2;
+	views[cv_id].split_width_x = sw + separator_width / 2;
 	draw();
 	Arg a = { .i = 0 };
 	change_right_desktop(&a);
 
+	/* DBG */	fprintf(stderr, "activate_left_view(): BYE 3\n");
 	views[cv_id].left_view_activated = True;
 	views[cv_id].both_views_activated = False;
 	views[cv_id].right_view_activated = False;
 	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+
+	/* DBG */	fprintf(stderr, "activate_left_view(): BYE 4\n");
 	focuscurrent();
-	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
+	
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\t%d\n", cv_id);
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\tBOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\tLEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	fprintf(stderr, "activate_left_view(): \t\t\tRIGHT %d\n", views[cv_id].right_view_activated);
+
+	/* DBG */	fprintf(stderr, "activate_left_view(): OUT\n");
 }
 
 void activate_right_view(const Arg *arg)
 {
-	/* DBG */	fprintf(stderr, "activate_views(): IN\n");
+	/* DBG */	fprintf(stderr, "activate_right_views(): IN\n");
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\t%d\n", cv_id);
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\tBOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\tLEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\tRIGHT %d\n", views[cv_id].right_view_activated);
+
+	if (!views[cv_id].rd[views[cv_id].curr_right_id].head && views[cv_id].both_views_activated)
+		return;
 	if (views[cv_id].left_view_activated)
 		activate_both_views(0);
 	if (!views[cv_id].both_views_activated)
@@ -662,7 +711,7 @@ void activate_right_view(const Arg *arg)
 	if (views[cv_id].curr_desk == LEFT)
 		nextview(0);
 
-	split_width_x = 0;
+	views[cv_id].split_width_x = 0;
 	draw();
 	Arg a = { .i = 0 };
 	change_left_desktop(&a);
@@ -673,7 +722,13 @@ void activate_right_view(const Arg *arg)
 
 	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	focuscurrent();
-	/* DBG */	fprintf(stderr, "activate_views(): OUT\n");
+
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\t%d\n", cv_id);
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\tBOTH %d\n", views[cv_id].both_views_activated);
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\tLEFT %d\n", views[cv_id].left_view_activated);
+	/* DBG */	fprintf(stderr, "activate_right_view(): \t\t\tRIGHT %d\n", views[cv_id].right_view_activated);
+
+	/* DBG */	fprintf(stderr, "activate_right_view(): OUT\n");
 }
 
 void activate_both_views(const Arg *arg)
@@ -683,7 +738,7 @@ void activate_both_views(const Arg *arg)
 	/* DBG */	fprintf(stderr, "activate_both_views(): BOTH ALREADY ACTIVATED\n");
 		return;
 	}
-	split_width_x = sw / def_width_split_coef;
+	views[cv_id].split_width_x = sw / def_width_split_coef;
 	if (views[cv_id].curr_desk == LEFT && views[cv_id].left_view_activated) {
 		views[cv_id].curr_desk = RIGHT;
 		previous_desktop(0);
@@ -730,7 +785,10 @@ void draw(void)
 	draw_bar();
 	draw_tags();
 //	draw_title();
-	draw_separator();
+//	draw_separator();
+
+	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
+	XRaiseWindow(dpy, bar);
 	XFlush(dpy);
 	/* DBG */	fprintf(stderr, "draw(): OUT\n");
 }
@@ -742,8 +800,6 @@ void draw_bar(void)
 	XAllocNamedColor(dpy, color_map, bar_bg_color, &color, &color);
 	XSetForeground(dpy, gc, color.pixel);
 	XFillRectangle(dpy, buffer, gc, 0, 0, sw, bar_height);
-	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-	XRaiseWindow(dpy, bar);
 	/* DBG */	fprintf(stderr, "draw_bar(): OUT\n");
 }
 
@@ -761,104 +817,132 @@ void draw_title(void)
 	XSetForeground(dpy, gc, color.pixel);
 	XDrawString(dpy, buffer, gc, (sw / 2) - (font_struct->per_char->width * d->curr->title_len / 2),
 		    font_height, d->curr->title, d->curr->title_len);
-	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
 	/* DBG */	fprintf(stderr, "draw_title(): OUT\n");
+}
+
+void draw_rectangle(const char *fill_color, int x, int y, int w, int h)
+{
+	/* DBG */	fprintf(stderr, "draw_rectangle(): IN\n");
+	XColor color;
+	XAllocNamedColor(dpy, color_map, fill_color, &color, &color);
+	XSetForeground(dpy, gc, color.pixel);
+	XFillRectangle(dpy, buffer, gc, x, y, w, h);
+	/* DBG */	fprintf(stderr, "draw_rectangle(): OUT\n");
+}
+
+void draw_string(const char *string_color, const char *string, int x, int h)
+{
+	/* DBG */	fprintf(stderr, "draw_string(): IN\n");
+	XColor color;
+	XAllocNamedColor(dpy, color_map, string_color, &color, &color);
+	XSetForeground(dpy, gc, color.pixel);
+	XDrawString(dpy, buffer, gc, x, h, string, strlen(string));
+	/* DBG */	fprintf(stderr, "draw_string(): OUT\n");
 }
 
 void draw_tags(void)
 {
 	/* DBG */	fprintf(stderr, "draw_tags(): IN\n");
 	unsigned int char_width = font_struct->per_char->width;
-	unsigned int x_left = char_width;
-	unsigned int x_right = sw - (strlen(curr_desk_symbol[1]) + 1) * char_width;
+	unsigned int x_left = border_offset;
+	unsigned int x_right = sw - border_offset;
 	unsigned int x_views = (sw / 2);
-
-	unsigned int i;
+	unsigned int i, j;
+	int x, y, w, h;
 	char c[20];
 	char *font_color = (char *) malloc(sizeof(char) * 7);
 	XColor color;
 
-	/* draw views tags */
-	for (i= 0; i < VIEWS; i++)
-		x_views -= (font_struct->per_char->width * strlen(tags_views[i]) / 2);
-	for (i = 1; i <= VIEWS; i++) {
-		sprintf(c, "%s", tags_views[i-1]);
-		if (i == cv_id) {
-			font_color = strcpy(font_color, focus_color);
-		} else {
-			font_color = strcpy(font_color, bar_tag_color);
-		}
-		XAllocNamedColor(dpy, color_map, font_color, &color, &color);
-		XSetForeground(dpy, gc, color.pixel);
-		XDrawString(dpy, buffer, gc, x_views, font_height, c, strlen(c));
-		XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-		XFlush(dpy);
-		x_views += strlen(tags_views[i-1]) * char_width + char_width;
-	}
-
-	/* draw left current desktop symbol */
+	/* calculate x_right */
 	for (i = 0; i < DESKTOPS_RIGHT; i++)
-		x_right -= strlen(tags_right[i]) * char_width + char_width;
-	if (views[cv_id].curr_desk == LEFT) {
-		font_color = strcpy(font_color, focus_color);
-	} else {
-		font_color = strcpy(font_color, bar_tag_color);
-	}
-	XAllocNamedColor(dpy, color_map, font_color, &color, &color);
-	XSetForeground(dpy, gc, color.pixel);
-	XDrawString(dpy, buffer, gc, x_left, font_height, curr_desk_symbol[0], strlen(curr_desk_symbol[0]));
-	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-	XFlush(dpy);
-	x_left += (strlen(curr_desk_symbol[0]) + 1) * char_width;
+		x_right -= strlen(tags_right[i]) * char_width + 2 * char_space;
 
 	/* draw left desktop tags */
 	for (i = 1; i <= DESKTOPS_LEFT; i++) {
 		sprintf(c, "%s", tags_left[i-1]);
+		x = x_left;
+		y = 0;
+		w = strlen(c) * char_width + 2 * char_space;
+		h = bar_height;
 		if (views[cv_id].ld[i].head && views[cv_id].curr_left_id != i) {
-			font_color = strcpy(font_color, left_unfocus_color);
+			draw_rectangle(left_tag_occupied_bg, x + char_space,
+				       font_height + 2, w - 2 * char_space, 2);
+			font_color = strcpy(font_color, left_tag_occupied_fg);
 		} else if (views[cv_id].curr_left_id == i) {
-			font_color = strcpy(font_color, focus_color);
+			if (views[cv_id].curr_desk == LEFT) {
+				draw_rectangle(focus_color, x, y, w, h);
+				font_color = strcpy(font_color, bar_bg_color);
+			} else {
+				draw_rectangle(left_tag_focus_bg, x, y, w, h);
+				font_color = strcpy(font_color, left_tag_focus_fg);
+			}
 		} else {
-			font_color = strcpy(font_color, bar_tag_color);
+			draw_rectangle(left_tag_normal_bg, x, y, w, h);
+			font_color = strcpy(font_color, left_tag_normal_fg);
 		}
-		XAllocNamedColor(dpy, color_map, font_color, &color, &color);
-		XSetForeground(dpy, gc, color.pixel);
-		XDrawString(dpy, buffer, gc, x_left, font_height, c, strlen(c));
-		XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-		XFlush(dpy);
-		x_left += strlen(tags_left[i-1]) * char_width + char_width;
+		draw_string(font_color, c, x_left + char_space, font_height);
+		x_left += strlen(c) * char_width + 2 * char_space;
 	}
-	
+
+	/* draw views tags */
+	for (i= 0; i < VIEWS; i++)
+		x_views -= (font_struct->per_char->width * strlen(tags_views[i]) / 2 + char_space);
+	x_views -= char_space;
+	for (i = 1; i <= VIEWS; i++) {
+		sprintf(c, "%s", tags_views[i-1]);
+		x = x_views;
+		y = 0;
+		w = strlen(c) * char_width + 2 * char_space;
+		h = bar_height;
+		Bool view_used = False;
+		for (j = 1; j <= DESKTOPS_LEFT; j++)
+			if (views[i].ld[j].head)
+				view_used = True;
+		for (j = 1; j <= DESKTOPS_RIGHT; j++)
+			if (views[i].rd[j].head)
+				view_used = True;
+		if (i == cv_id) {
+			draw_rectangle(view_tag_focus_bg, x, y, w, h);
+			font_color = strcpy(font_color, view_tag_focus_fg);
+		} else if (view_used && i != cv_id) {
+			draw_rectangle(view_tag_occupied_bg, x + char_space,
+				       font_height + 2, w - 2 * char_space, 2);
+			font_color = strcpy(font_color, view_tag_occupied_fg);
+		} else {
+			draw_rectangle(view_tag_normal_bg, x, y, w, h);
+			font_color = strcpy(font_color, view_tag_normal_fg);
+		}
+		draw_string(font_color, c, x_views + char_space, font_height);
+		x_views += strlen(c) * char_width + 2 * char_space;
+	}
+
 	/* draw right desktop tags */
 	for (i = 1; i <= DESKTOPS_RIGHT; i++) {
 		sprintf(c, "%s", tags_right[i-1]);
+		x = x_right;
+		y = 0;
+		w = strlen(c) * char_width + 2 * char_space;
+		h = bar_height;
+
 		if (views[cv_id].rd[i].head && views[cv_id].curr_right_id != i) {
-			font_color = strcpy(font_color, right_unfocus_color);
+			draw_rectangle(right_tag_occupied_bg, x + char_space,
+				       font_height + 2, w - 2 * char_space, 2);
+			font_color = strcpy(font_color, right_tag_occupied_fg);
 		} else if (views[cv_id].curr_right_id == i) {
-			font_color = strcpy(font_color, focus_color);
+			if (views[cv_id].curr_desk == RIGHT) {
+				draw_rectangle(focus_color, x, y, w, h);
+				font_color = strcpy(font_color, bar_bg_color);
+			} else {
+				draw_rectangle(right_tag_focus_bg, x, y, w, h);
+				font_color = strcpy(font_color, right_tag_focus_fg);
+			}
 		} else {
-			font_color = strcpy(font_color, bar_tag_color);
+			draw_rectangle(right_tag_normal_bg, x, y, w, h);
+			font_color = strcpy(font_color, right_tag_normal_fg);
 		}
-		XAllocNamedColor(dpy, color_map, font_color, &color, &color);
-		XSetForeground(dpy, gc, color.pixel);
-		XDrawString(dpy, buffer, gc, x_right, font_height, c, strlen(c));
-		XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-		XFlush(dpy);
-		x_right += strlen(tags_right[i-1]) * char_width + char_width;
+		draw_string(font_color, c, x_right + char_space, font_height);
+		x_right += strlen(c) * char_width + 2 * char_space;
 	}
-
-	/* draw right current desktop tag */
-	if (views[cv_id].curr_desk == RIGHT) {
-		font_color = strcpy(font_color, focus_color);
-	} else {
-		font_color = strcpy(font_color, bar_tag_color);
-	}
-	XAllocNamedColor(dpy, color_map, font_color, &color, &color);
-	XSetForeground(dpy, gc, color.pixel);
-	XDrawString(dpy, buffer, gc, x_right, font_height, curr_desk_symbol[1], strlen(curr_desk_symbol[1]));
-
-	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-
 	/* DBG */	fprintf(stderr, "draw_tags(): OUT\n");
 }
 
@@ -874,10 +958,10 @@ void separator_increase(const Arg *arg)
 	/* DBG */	fprintf(stderr, "separator_increase(): IN\n");
 	if (!views[cv_id].both_views_activated)
 		return;
-	if (split_width_x + min_window_size + 2 * separator_inc < sw) {
-		split_width_x += separator_inc;
+	if (views[cv_id].split_width_x + min_window_size + 2 * separator_inc < sw) {
+		views[cv_id].split_width_x += separator_inc;
 	}
-	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
+	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", views[cv_id].split_width_x);
 	draw();
 	if (views[cv_id].curr_desk == LEFT)
 		views[cv_id].curr_desk = RIGHT;
@@ -894,9 +978,9 @@ void separator_decrease(const Arg *arg)
 	/* DBG */	fprintf(stderr, "separator_decrease(): IN\n");
 	if (!views[cv_id].both_views_activated)
 		return;
-	if (split_width_x > min_window_size + 2 * separator_dec)
-		split_width_x -= separator_dec;
-	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", split_width_x);
+	if (views[cv_id].split_width_x > min_window_size + 2 * separator_dec)
+		views[cv_id].split_width_x -= separator_dec;
+	/* DBG */	fprintf(stderr, "separator_increase(): w_split_coef: %f\n", views[cv_id].split_width_x);
 	draw();
 	if (views[cv_id].curr_desk == RIGHT)
 		views[cv_id].curr_desk = LEFT;
@@ -916,14 +1000,14 @@ void maximize(Window w)
 	if (views[cv_id].curr_desk == LEFT) {
 		wx = border_offset;
 		wy = border_offset + (show_bar ? (bar_height) : (0));
-		ww = split_width_x - 2 * border_width - 2 * border_offset - separator_width / 2;
-		wh = split_height_y - 2 * border_width - 2 * border_offset;
+		ww = views[cv_id].split_width_x - 2 * border_width - 2 * border_offset - separator_width / 2;
+		wh = views[cv_id].split_height_y - 2 * border_width - 2 * border_offset;
 		move_resize_window(w, wx, wy, ww, wh);
 	} else if (views[cv_id].curr_desk == RIGHT) {
-		wx = split_width_x + border_offset + sep;
+		wx = views[cv_id].split_width_x + border_offset + sep;
 		wy = border_offset + (show_bar ? (bar_height) : (0));
-		ww = sw  - split_width_x - 2 * border_width - 2 * border_offset - sep;
-		wh = split_height_y - 2 * border_width - 2 * border_offset;
+		ww = sw  - views[cv_id].split_width_x - 2 * border_width - 2 * border_offset - sep;
+		wh = views[cv_id].split_height_y - 2 * border_width - 2 * border_offset;
 		move_resize_window(w, wx, wy, ww, wh);
 	}
 	/* DBG */	fprintf(stderr, "maximize(): OUT\n");
@@ -1063,7 +1147,7 @@ void configurerequest(XEvent *e)
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
-	tile(d);
+	//tile(d);
 	/* DBG */	fprintf(stderr, "cofigurerequest(): OUT\n");
 }
 
@@ -1153,6 +1237,17 @@ void tile(Desktop *d)
 	 * |     |   |
 	 * +-----+---+
 	 */
+
+	/**   TEST   **/
+	if (d->curr) {
+		maximize(d->curr->win);
+		return;
+	} else  {
+		return;
+	}
+	return;
+	/** END TEST **/
+
 	Client *c = NULL;
 	int n = 0;
 	int bar = (show_bar ? (bar_height) : (0));
@@ -1166,7 +1261,7 @@ void tile(Desktop *d)
 		wx = border_offset;
 		wy = border_offset + bar;
 		ww = d->master_size - 2 * border_offset - 2 * border_width;
-		wh = split_height_y - 2 * border_offset - 2 * border_width;
+		wh = views[cv_id].split_height_y - 2 * border_offset - 2 * border_width;
 		move_resize_window(d->curr->win, wx, wy, ww, wh);
 		
 		for (c = d->head; c; c = c->next)
@@ -1177,17 +1272,17 @@ void tile(Desktop *d)
 				continue;
 			wx = d->master_size;
 			wy = y + border_offset;
-			ww = split_width_x - d->master_size - border_offset - 2 \
+			ww = views[cv_id].split_width_x - d->master_size - border_offset - 2 \
 			     * border_width - separator_width / 2,
-			wh = split_height_y / n  - 2 * border_offset - 2 * border_width;
+			wh = views[cv_id].split_height_y / n  - 2 * border_offset - 2 * border_width;
 			move_resize_window(c->win, wx, wy, ww, wh);
-			y += split_height_y / n;
+			y += views[cv_id].split_height_y / n;
 		}
 	} else if (d->head && views[cv_id].curr_desk == RIGHT) {
-		wx = split_width_x + border_offset + sep;
+		wx = views[cv_id].split_width_x + border_offset + sep;
 		wy = border_offset + bar;
 		ww = d->master_size - 2 * border_offset - 2 * border_width;
-		wh = split_height_y - 2 * border_width - 2 * border_offset;
+		wh = views[cv_id].split_height_y - 2 * border_width - 2 * border_offset;
 		move_resize_window(d->curr->win, wx, wy, ww, wh);
 		for (c = d->head; c; c = c->next)
 			if (!(c == d->curr))
@@ -1195,13 +1290,13 @@ void tile(Desktop *d)
 		for (c = d->head; c; c = c->next) {
 			if (c == d->curr)
 				continue;
-			wx = split_width_x + d->master_size + sep;
+			wx = views[cv_id].split_width_x + d->master_size + sep;
 			wy = y + border_offset;
-			ww = sw - split_width_x - d->master_size - 2 * border_width \
+			ww = sw - views[cv_id].split_width_x - d->master_size - 2 * border_width \
 			     - border_offset - sep;
-			wh = split_height_y / n - 2 * border_width - 2 * border_offset;
+			wh = views[cv_id].split_height_y / n - 2 * border_width - 2 * border_offset;
 			move_resize_window(c->win, wx, wy, ww, wh);
-			y += split_height_y / n;
+			y += views[cv_id].split_height_y / n;
 		}
 	}
 	/* DBG */	fprintf(stderr, "tile(): OUT\n");
@@ -1239,8 +1334,9 @@ void mousemove(const Arg *arg)
 			xw = ((arg->i == MOVE) ? wa.x : wa.width) + ev.xmotion.x - rx;
 			yh = ((arg->i == MOVE) ? wa.y : wa.height) + ev.xmotion.y - ry;
 			left_wall = (xw + wa.width + 2 * border_width \
-				   < split_width_x + split_width_x / 10 - separator_width / 2);
-			right_wall = (xw > split_width_x - split_width_x / 10 + separator_width / 2);
+				   < views[cv_id].split_width_x + views[cv_id].split_width_x / 10 - separator_width / 2);
+			right_wall = (xw \
+				   > views[cv_id].split_width_x - views[cv_id].split_width_x / 10 + separator_width / 2);
 			if (arg->i == RESIZE) {
 				XResizeWindow(dpy, d->curr->win,
 					      (xw > min_window_size) ? xw : wa.width,
@@ -1283,8 +1379,8 @@ void spawn(const Arg *arg)
 		if (dpy)
 			close(ConnectionNumber(dpy));
 		setsid();
-		execvp((char *)arg->com[0], (char **)arg->com);
-		err(EXIT_SUCCESS, "execvp %s", (char *)arg->com[0]);
+		execvp(((char **)arg->com)[0], (char **)arg->com);
+		err(EXIT_SUCCESS, "execvp %s", (char **)arg->com[0]);
 	}
 	/* DBG */	fprintf(stderr, "spawn(): OUT\n");
 }
@@ -1347,10 +1443,6 @@ void setup(void)
 	grabkeys();
 	grabbuttons();
 
-	/* setup width & heigh split coefficients */
-	split_width_x = sw / def_width_split_coef;
-	split_height_y = sh / def_height_split_coef - (show_bar ? (bar_height) : (0));
-
 	/* set window border colors */
 	win_focus = getcolor(focus_color);
 	left_win_unfocus = getcolor(left_unfocus_color);
@@ -1374,42 +1466,34 @@ void setup(void)
 		     ? (default_left_desktop) : (1));
 	def_right = ((default_right_desktop >= 0 && default_right_desktop <= DESKTOPS_LEFT)
 		      ? (default_right_desktop) : (1));
-	views[cv_id].curr_desk = LEFT;
-	views[cv_id].prev_left_id = views[cv_id].curr_left_id = def_left;
-	views[cv_id].prev_right_id = views[cv_id].curr_right_id = def_right;
 
 	unsigned int i, j;
-	for (i = 0; i <= VIEWS; i++) {
+	for (i = 1; i <= VIEWS; i++) {
 		for (j = 0; j <= DESKTOPS_LEFT; j++) {
 			views[i].ld[j].head = NULL;
 			views[i].ld[j].curr = NULL;
-			views[i].ld[j].master_size = ((master_size) ? (master_size) : (split_width_x / 2));
+			views[i].ld[j].master_size = ((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
 		}
 		for (j = 0; j <= DESKTOPS_RIGHT; j++) {
 			views[i].rd[j].head = NULL;
 			views[i].rd[j].curr = NULL;
-			views[i].rd[j].master_size = ((master_size) ? (master_size) : (split_width_x / 2));
+			views[i].rd[j].master_size = ((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
 		}
 	}
 
-	/* change to default desktop */
-	Arg a = { .i = views[cv_id].curr_left_id };
-	Arg b = { .i = views[cv_id].curr_right_id };
-	change_left_desktop(&a);
-	change_right_desktop(&b);
-
-	/* default views */
-	for (i = 0; i <= VIEWS; i++) {
+	for (i = 1; i <= VIEWS; i++) {
 		views[i].left_view_activated = False;
 		views[i].right_view_activated = False;
 		views[i].both_views_activated = True;
+		views[i].curr_left_id = views[i].prev_left_id = def_left;
+		views[i].curr_right_id = views[i].prev_right_id = def_right;
+		views[i].curr_desk = LEFT;
+		views[i].split_width_x = sw / def_width_split_coef;
+		views[i].split_height_y = sh / def_height_split_coef - (show_bar ? (bar_height) : (0));
 	}
 
-	if (default_focused_view == LEFT) {
-		activate_left_view(0);
-	} else if (default_focused_view == RIGHT) {
-		activate_right_view(0);
-	}
+	Arg a = { .i = default_view };
+	change_view(&a);
 
 	/* draw bar, tags, title, separator, etc. */
 	draw();

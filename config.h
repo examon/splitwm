@@ -5,48 +5,69 @@
 
 /** Font **/
 static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
-static const unsigned int top_font_offset = 2;
-static const unsigned int bottom_font_offset = 4;
+static const unsigned int top_font_offset = 3;
+static const unsigned int bottom_font_offset = 5;
 
 /** Bar **/
+static const unsigned int char_space = 5; 	/* Spaces betweed bar tags */
 static const Bool show_bar = True;	/* False to hide bar */
 
 /** Views **/
-static const char *tags_views[] = { "> 1 <", "= 2 =", "- 3 -" };
-static const unsigned int default_view          = 1;		/* default view */
-static const unsigned int default_focused_view  = NONE;		/* LEFT, RIGHT or NONE */
-static const unsigned int def_width_split_coef  = 2;		/* screen width split coefficient, 2 == 1/2 screen width */
-static const unsigned int def_height_split_coef = 1;		/* screen height split coefficient, 2 == 1/2 screen height */
+static const char *tags_views[] = { "one", "two", "three", "four" };	/* max 9 */
+static const unsigned int default_view           = 1;		/* default view */
+static const unsigned int default_focus          = NONE;	/* LEFT, RIGHT or NONE */
+static const unsigned int def_width_split_coef   = 2;		/* screen width split coefficient, 2 == 1/2 screen width */
+static const unsigned int def_height_split_coef  = 1;		/* screen height split coefficient, 2 == 1/2 screen height */
 
 /** Desktops **/
-static const char *tags_left[]  = { "term", "web", "test", "code" };
-static const char *tags_right[] = { "1", "2", "devel" };
-static const char *curr_desk_symbol[]  = { "=>>", "<--" };	/* symbol for left & right current desktop */
+static const char *tags_left[]  = { "www", "term", "im", "devel", "stuff" };	/* max 9 */
+static const char *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
 static const unsigned int default_left_desktop  = 1;
 static const unsigned int default_right_desktop = 1;
 static const unsigned int master_size = 0;	/* master window size, if 0 then master_size = screen_width / 2 */
 
 /** Window **/
-static const unsigned int border_width    = 5;		/* window border width */
-static const unsigned int border_offset   = 5;		/* spaces betweed windows borders */
+static const unsigned int border_width    = 2;		/* window border width */
+static const unsigned int border_offset   = 0;		/* spaces betweed windows borders */
 static const unsigned int min_window_size = 20;		/* minimum window size */
 
 /** Separator **/
-static const unsigned int separator_width = 20;		/* width of the split seperator */
+static const unsigned int separator_width = 10;		/* width of the split seperator */
 static const unsigned int separator_inc   = 20;		/* separator increase distance */
 static const unsigned int separator_dec   = 20;		/* separator decrease distance */
 
 /** Colors **/
-static const char focus_color[]         = "#ff5555";	/* focused window border color (any desktop) */
-static const char left_unfocus_color[]  = "#ffdd0e";	/* unfocused window border color (left desktop) */
-static const char right_unfocus_color[] = "#55ff55";	/* unfocused window border color (right desktop) */
-static const char bar_bg_color[]        = "#1b1b1b";	/* status bar background color */
-static const char bar_tag_color[]       = "#aaaaaa";	/* status bar tag color */
+static const char focus_color[]         = "#d87a16";	/* focused window border color (any desktop) */
+static const char left_unfocus_color[]  = "#005577";	/* unfocused window border/bar desktop tag color (left desktop) */
+static const char right_unfocus_color[] = "#288428";	/* unfocused window border/bar desktop tag color (right desktop) */
+static const char bar_bg_color[]        = "#111111";	/* status bar background color */
 static const char bar_title_color[]     = "#bbbbbb";	/* status bar title color */
+
+static const char left_tag_focus_bg[]    = "#005577";
+static const char left_tag_focus_fg[]    = "#eeeeee";
+static const char left_tag_normal_bg[]   = "#111111";
+static const char left_tag_normal_fg[]   = "#bbbbbb";
+static const char left_tag_occupied_bg[] = "#bbbbbb";
+static const char left_tag_occupied_fg[] = "#bbbbbb";
+
+static const char right_tag_focus_bg[]    = "#288428";
+static const char right_tag_focus_fg[]    = "#eeeeee";
+static const char right_tag_normal_bg[]   = "#111111";
+static const char right_tag_normal_fg[]   = "#bbbbbb";
+static const char right_tag_occupied_bg[] = "#bbbbbb";
+static const char right_tag_occupied_fg[] = "#bbbbbb";
+
+static const char view_tag_focus_bg[]    = "#686868";
+static const char view_tag_focus_fg[]    = "#eeeeee";
+static const char view_tag_normal_bg[]   = "#111111";
+static const char view_tag_normal_fg[]   = "#bbbbbb";
+static const char view_tag_occupied_bg[] = "#bbbbbb";
+static const char view_tag_occupied_fg[] = "#bbbbbb";
+
 
 /** Commands **/
 static const char *spawn_terminal[] = { "urxvt", NULL };
-static const char *spawn_dmenu[]    = { "dmenu_run", NULL };
+static const char *spawn_dmenu[]    = { "dmenu_run", "-fn", font, "-nb", bar_bg_color, "-nf", view_tag_normal_fg, "-sb", focus_color, "-sf", bar_bg_color, NULL };
 
 /** Modifiers **/
 #define MOD1		Mod1Mask	/* ALT key */
