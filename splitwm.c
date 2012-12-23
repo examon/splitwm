@@ -106,6 +106,7 @@ static void sigchld(int sig);
 static void spawn(const Arg *arg);
 static void tile(Desktop *d);
 static void tile_current(const Arg *arg);
+static void toggle_float(const Arg *arg);
 static void quit(const Arg *arg);
 static int xerror(Display *dis, XErrorEvent *ee);
 
@@ -231,18 +232,49 @@ void keypress(XEvent *e)
 
 void buttonpress(XEvent *e)
 {
+	/* DBG */	fprintf(stderr, "buttonpress(): IN\n");
 	unsigned int i;
+	Bool client_found = False;
+	Desktop *d = NULL;
+	Client *c = NULL;
+	XButtonEvent ev = e->xbutton;
 
+	if (!(d = get_current_desktop()))
+		return;
+	for (c = d->head; c; c = c->next) {
+		if (c->win == ev.subwindow) {
+			d->curr = c;
+			client_found = True;
+			focuscurrent();
+		}
+	}
+	if (!client_found && ev.subwindow != root) {
+		nextview(0);
+		if (!(d = get_current_desktop()))
+			return;
+		for (c = d->head; c; c = c->next) {
+			if (c->win == ev.subwindow) {
+				d->curr = c;
+				focuscurrent();
+				break;
+			}
+		}
+	}
+	
 	for (i = 0; i < LENGTH(buttons); i++) {
 		if ((buttons[i].mask == e->xbutton.state) &&
 		    (buttons[i].button == e->xbutton.button) && buttons[i].func)
 			buttons[i].func(&(buttons[i].arg));
 	}
+
+	/* DBG */	fprintf(stderr, "buttonpress(): OUT\n");
 }
 
 void enternotify(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "enternotify(): IN\n");
+	if (!follow_mouse_focus)
+		return;
 	Client *c = NULL;
 	Desktop *d = NULL;
 	Bool client_found = False;
@@ -255,7 +287,7 @@ void enternotify(XEvent *e)
 
 	for (c = d->head; c; c = c->next) {
 		if (c->win == ev->window) {
-	/* DBG */	fprintf(stderr, "enternotify(): FOCUSCURRENT()\n");
+			fprintf(stderr, "enternotify(): FOCUSCURRENT()\n");
 			client_found = True;
 			d->curr = c;
 			focuscurrent();
@@ -264,7 +296,7 @@ void enternotify(XEvent *e)
 	}
 
 	if (!client_found && ev->window != root) {
-	/* DBG */	fprintf(stderr, "enternotify(): NEXTVIEW()\n");
+		fprintf(stderr, "enternotify(): NEXTVIEW()\n");
 		nextview(0);
 		if (!(d = get_current_desktop()))
 			return;
@@ -598,8 +630,13 @@ void addwindow(Window w)
 		c->prev = n;
 		n->next = c;
 	}
-	if (XFetchName(dpy, c->win, &c->title))
+	if (XFetchName(dpy, c->win, &c->title)) {
 		c->title_len = strlen(c->title);
+		if (c->title == NULL) {
+			c->title = "X";
+			c->title_len = strlen("X");
+		}
+	}
 	d->curr = c;	/* new client is set to master */
 	XSelectInput(dpy, d->curr->win, EnterWindowMask);
 	/* DBG */	fprintf(stderr, "addwindow(): OUT\n");
@@ -840,8 +877,14 @@ void draw_tags(void)
 
 		/* Draw window title for left desktop */
 		if (views[cv_id].ld[views[cv_id].curr_left_id].head) {
-			sprintf(c, "%s", views[cv_id].ld[views[cv_id].curr_left_id].curr->title);
-			draw_string(left_tag_normal_fg, c, x_left + char_space, font_height);
+			if (views[cv_id].ld[views[cv_id].curr_left_id].curr->title == NULL) {
+				fprintf(stderr, "AWWWWWWWW\n");
+				sprintf(c, "%s", "unnamed");
+				draw_string(left_tag_normal_fg, c, x_left + char_space, font_height);
+			} else {
+				sprintf(c, "%s", views[cv_id].ld[views[cv_id].curr_left_id].curr->title);
+				draw_string(left_tag_normal_fg, c, x_left + char_space, font_height);
+			}
 		}
 	}
 
@@ -890,6 +933,7 @@ void draw_tags(void)
 		x_right -= strlen(c) * char_width + char_space;
 
 		/* Draw window title for right desktop */
+		/*
 		if (views[cv_id].rd[views[cv_id].curr_right_id].head) {
 			unsigned int title_length = views[cv_id].rd[views[cv_id].curr_right_id].curr->title_len
 						  * char_width + 2 * char_space;
@@ -898,6 +942,7 @@ void draw_tags(void)
 				    x_right, font_height);
 			x_right += title_length;
 		}
+		*/
 
 		/* Draw layout tag for right desktop */
 		draw_string(right_tag_normal_fg, c, x_right, font_height);
@@ -1176,6 +1221,7 @@ void maprequest(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "maprequest(): IN\n");
 	XMapRequestEvent *ev = &e->xmaprequest;
+	XWindowAttributes wa;
 	Desktop *d = NULL;
 	Client *c = NULL;
 
@@ -1193,6 +1239,8 @@ void maprequest(XEvent *e)
 		d->layout = TILE;
 	tile(d);
 	focuscurrent();
+	XGetWindowAttributes(dpy, d->curr->win, &wa);
+	XWarpPointer(dpy, root, ev->window, 0, 0, 0, 0, --wa.width/2, --wa.height/2);
 	draw();
 	/* DBG */	fprintf(stderr, "maprequest(): OUT\n");
 }
@@ -1207,6 +1255,18 @@ void tile_current(const Arg *arg)
 	d->layout = TILE;
 	tile(d);
 	/* DBG */	fprintf(stderr, "tile_current(): OUT\n");
+}
+
+void toggle_float(const Arg *arg)
+{
+	/* DBG */	fprintf(stderr, "toggle_current(): IN\n");
+	Desktop *d = NULL;
+
+	if (!(d = get_current_desktop()))
+		return;
+	d->layout = FLOAT;
+	draw();
+	/* DBG */	fprintf(stderr, "toggle_current(): OUT\n");
 }
 
 void move_resize_window(Window win, int x, int y, int w, int h)
@@ -1322,6 +1382,7 @@ void mousemove(const Arg *arg)
 				   < views[cv_id].split_width_x + views[cv_id].split_width_x / 10 - separator_width / 2);
 			right_wall = (xw \
 				   > views[cv_id].split_width_x - views[cv_id].split_width_x / 10 + separator_width / 2);
+
 			if (arg->i == RESIZE) {
 				d->layout = FLOAT;
 				XResizeWindow(dpy, d->curr->win,

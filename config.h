@@ -26,6 +26,7 @@ static const unsigned int default_left_desktop  = 1;
 static const unsigned int default_right_desktop = 1;
 
 /** Window **/
+static const Bool follow_mouse_focus      = False;
 static const unsigned int border_width    = 2;		/* window border width */
 static const unsigned int border_offset   = 2;		/* spaces betweed windows borders */
 
@@ -61,7 +62,6 @@ static const char view_tag_normal_bg[]    = "#111111";
 static const char view_tag_normal_fg[]    = "#bbbbbb";
 static const char view_tag_occupied_bg[]  = "#bbbbbb";
 static const char view_tag_occupied_fg[]  = "#bbbbbb";
-
 
 /** Commands **/
 static const char *spawn_terminal[] = { "urxvt", NULL };
@@ -99,6 +99,7 @@ static Key keys[] = {
 	{  MOD4|SHIFT,       XK_c,          kill_client,            { 0 }},
 	{  MOD1,             XK_f,          fullscreen,             { 0 }},
 	{  MOD1,             XK_t,          tile_current,           { 0 }},
+	{  MOD1|SHIFT,       XK_f,          toggle_float,           { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
 	{  MOD4,             XK_Tab,        previous_view,          { 0 }},
@@ -110,7 +111,7 @@ static Key keys[] = {
 	{  MOD4,             XK_Return,     spawn,                  { .com = spawn_terminal }},
 	{  MOD1,             XK_p,          spawn,                  { .com = spawn_dmenu }},
 	{  MOD4,             XK_p,          spawn,                  { .com = spawn_dmenu }},
-	
+
 	{  MOD4,             XK_1,          change_left_desktop,    { .i = 1 }},
 	{  MOD4,             XK_2,          change_left_desktop,    { .i = 2 }},
 	{  MOD4,             XK_3,          change_left_desktop,    { .i = 3 }},
