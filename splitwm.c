@@ -260,13 +260,13 @@ void buttonpress(XEvent *e)
 			}
 		}
 	}
+	draw();
 	
 	for (i = 0; i < LENGTH(buttons); i++) {
 		if ((buttons[i].mask == e->xbutton.state) &&
 		    (buttons[i].button == e->xbutton.button) && buttons[i].func)
 			buttons[i].func(&(buttons[i].arg));
 	}
-
 	/* DBG */	fprintf(stderr, "buttonpress(): OUT\n");
 }
 
@@ -534,7 +534,6 @@ void change_view(const Arg *arg)
 void change_left_desktop(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "change_left_desktop(): IN\n");
-	/* DBG */	fprintf(stderr, "change_left_desktop(): %d -> %d\n", views[cv_id].curr_left_id, arg->i);
 	Client *c = NULL;
 	Desktop *d = &views[cv_id].ld[views[cv_id].curr_left_id];
 	Desktop *n = &views[cv_id].ld[arg->i];
@@ -553,6 +552,11 @@ void change_left_desktop(const Arg *arg)
 	if (views[cv_id].left_view_activated || views[cv_id].right_view_activated
 	 || views[cv_id].curr_desk == LEFT)
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	if (views[cv_id].curr_desk == RIGHT) {
+		views[cv_id].curr_desk = LEFT;
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+		views[cv_id].curr_desk = RIGHT;
+	}
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
 	/* DBG */	printstatus();
@@ -561,7 +565,6 @@ void change_left_desktop(const Arg *arg)
 void change_right_desktop(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "change_right_desktop(): IN\n");
-	/* DBG */	fprintf(stderr, "change_right_desktop(): %d -> %d\n", views[cv_id].curr_right_id, arg->i);
 	Client *c = NULL;
 	Desktop *d = &views[cv_id].rd[views[cv_id].curr_right_id];
 	Desktop *n = &views[cv_id].rd[arg->i];
@@ -580,6 +583,11 @@ void change_right_desktop(const Arg *arg)
 	if (views[cv_id].left_view_activated || views[cv_id].right_view_activated
 	 || views[cv_id].curr_desk == RIGHT)
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	if (views[cv_id].curr_desk == LEFT) {
+		views[cv_id].curr_desk = RIGHT;
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+		views[cv_id].curr_desk = LEFT;
+	}
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
 	/* DBG */	printstatus();
@@ -1074,16 +1082,10 @@ void maximize(Window w)
 void maximize_current(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "maximize_current(): IN\n");
-	Client *c = NULL;
-	if (views[cv_id].curr_desk == LEFT) {
-		if ((c = views[cv_id].ld[views[cv_id].curr_left_id].curr))
-			maximize(c->win);
-	} else if (views[cv_id].curr_desk == RIGHT) {
-		if ((c = views[cv_id].rd[views[cv_id].curr_right_id].curr))
-			maximize(c->win);
-	} else {
+	Desktop *d = NULL;
+	if (!(d = get_current_desktop()))
 		return;
-	}
+	maximize(d->curr->win);
 	/* DBG */	fprintf(stderr, "maximize_current(): OUT\n");
 }
 
@@ -1382,7 +1384,6 @@ void mousemove(const Arg *arg)
 				   < views[cv_id].split_width_x + views[cv_id].split_width_x / 10 - separator_width / 2);
 			right_wall = (xw \
 				   > views[cv_id].split_width_x - views[cv_id].split_width_x / 10 + separator_width / 2);
-
 			if (arg->i == RESIZE) {
 				d->layout = FLOAT;
 				XResizeWindow(dpy, d->curr->win,
@@ -1394,7 +1395,16 @@ void mousemove(const Arg *arg)
 				 || (!views[cv_id].left_view_activated && left_wall)) {
 					XMoveWindow(dpy, d->curr->win, xw, yh);
 				} else if (!views[cv_id].left_view_activated && !left_wall) {
+					/* mouse draw window from left desktop to right */
 					client_to_view(0);
+					tile_current(0);
+					views[cv_id].curr_desk = RIGHT;
+					if (views[cv_id].rd[views[cv_id].curr_right_id].layout == TILE) {
+						tile_current(0);
+					} else {
+						maximize_current(0);
+					}
+					views[cv_id].curr_desk = LEFT;
 					XUngrabPointer(dpy, CurrentTime);
 					draw();
 					return;
@@ -1405,7 +1415,16 @@ void mousemove(const Arg *arg)
 				 || (!views[cv_id].right_view_activated && right_wall)) {
 					XMoveWindow(dpy, d->curr->win, xw, yh);
 				} else if (!views[cv_id].right_view_activated && !right_wall) {
+					/* mouse draw window from right desktop to left */
 					client_to_view(0);
+					tile_current(0);
+					views[cv_id].curr_desk = LEFT;
+					if (views[cv_id].ld[views[cv_id].curr_left_id].layout == TILE) {
+						tile_current(0);
+					} else {
+						maximize_current(0);
+					}
+					views[cv_id].curr_desk = RIGHT;
 					XUngrabPointer(dpy, CurrentTime);
 					draw();
 					return;
