@@ -101,7 +101,7 @@ static Key keys[] = {
 	{  MOD1,             XK_t,          tile_current,           { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},
-	{  MOD4,             XK_Tab,        previous_desktop,       { 0 }},
+	{  MOD4,             XK_Tab,        previous_view,          { 0 }},
 	{  MOD1|SHIFT,       XK_h,          separator_decrease,     { 0 }},
 	{  MOD1|SHIFT,       XK_l,          separator_increase,     { 0 }},
 	{  MOD4|SHIFT,       XK_h,          master_size_decrease,   { 0 }},
