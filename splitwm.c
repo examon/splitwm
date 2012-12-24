@@ -102,6 +102,7 @@ static void send_kill_signal(Window w);
 static void separator_increase(const Arg *arg);
 static void separator_decrease(const Arg *arg);
 static void setup(void);
+static void show_or_hide_bar(const Arg *arg);
 static void sigchld(int sig);
 static void spawn(const Arg *arg);
 static void tile(Desktop *d);
@@ -154,12 +155,14 @@ static unsigned int win_focus;
 static const unsigned int bottom_font_offset = 5;
 static const unsigned int min_window_size = 20;
 static const unsigned int top_font_offset = 3;
-static Pixmap buffer;
+static Pixmap bar_buffer;
+static Pixmap separator_buffer;
 static Colormap color_map;
 static Display *dpy;
 static XFontStruct *font_struct;
 static GC gc;
 static Window bar;
+static Window separator;
 static Window root;
 static Bool running = True;
 static Atom wmatoms[WM_COUNT];
@@ -316,7 +319,7 @@ void enternotify(XEvent *e)
 void expose(XEvent *e)
 {
 	/* DBG */	fprintf(stderr, "expose(): IN\n");
-	draw();
+	//draw();
 	/* DBG */	fprintf(stderr, "expose(): OUT\n");
 }
 
@@ -754,28 +757,26 @@ void activate_both_views(const Arg *arg)
 	unsigned int i;
 	views[cv_id].split_width_x = sw / 2;
 
-	if (views[cv_id].curr_desk == LEFT && views[cv_id].left_view_activated) {
+	for (i = 1; i <= DESKTOPS_LEFT; i++) {
+		views[cv_id].ld[i].layout = TILE;
+		views[cv_id].ld[i].master_size =
+			((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
+		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	}
+	for (i = 1; i <= DESKTOPS_RIGHT; i++) {
+		views[cv_id].rd[i].layout = TILE;
+		views[cv_id].rd[i].master_size =
+			((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
+		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	}
+	if (views[cv_id].curr_desk == LEFT) {
 		views[cv_id].curr_desk = RIGHT;
 		previous_desktop(0);
 		views[cv_id].curr_desk = LEFT;
-		for (i = 1; i <= DESKTOPS_LEFT; i++) {
-			views[cv_id].ld[i].layout = TILE;
-			views[cv_id].ld[i].master_size =
-				((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
-			tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-		}
-		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	} else {
+	} else if (views[cv_id].curr_desk == RIGHT) {
 		views[cv_id].curr_desk = LEFT;
-			previous_desktop(0);
+		previous_desktop(0);
 		views[cv_id].curr_desk = RIGHT;
-		for (i = 1; i <= DESKTOPS_RIGHT; i++) {
-			views[cv_id].rd[i].layout = TILE;
-			views[cv_id].rd[i].master_size =
-				((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
-			tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
-		}
-		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
 	}
 
 	views[cv_id].left_view_activated = False;
@@ -788,6 +789,7 @@ void activate_both_views(const Arg *arg)
 void prepare_draw(void)
 {
 	/* DBG */	fprintf(stderr, "prepare_font(): IN\n");
+	/* prepare bar */
 	color_map = DefaultColormap(dpy, screen);
 	XGCValues val;
 	val.font = XLoadFont(dpy, font);
@@ -797,8 +799,26 @@ void prepare_draw(void)
 		     + top_font_offset + bottom_font_offset;
 	gc = XCreateGC(dpy, root, GCFont, &val);
 	bar = XCreateSimpleWindow(dpy, root, 0, 0, sw, bar_height, 0, 0, 0);
-	buffer = XCreatePixmap(dpy, root, sw, bar_height, DefaultDepth(dpy, screen));
+	bar_buffer = XCreatePixmap(dpy, root, sw, bar_height, DefaultDepth(dpy, screen));
+
+	/* prepare separator */
+	XColor color;
+	XAllocNamedColor(dpy, color_map, bar_bg_color, &color, &color);
+	separator = XCreateSimpleWindow(dpy, root, 1, 1, 1, 1, 0, 0, color.pixel);
 	/* DBG */	fprintf(stderr, "prepare_font(): OUT\n");
+}
+
+void draw_separator(void)
+{
+//	/* DBG */	fprintf(stderr, "draw_separator(): IN\n");
+	XUnmapWindow(dpy, separator);
+	move_resize_window(separator,
+			   views[cv_id].split_width_x - separator_width/2,
+			   (show_bar ? (bar_height) : (0)),
+			   separator_width,
+			   sh);
+	XMapWindow(dpy, separator);
+//	/* DBG */	fprintf(stderr, "draw_separator(): OUT\n");
 }
 
 void draw(void)
@@ -806,11 +826,11 @@ void draw(void)
 //	/* DBG */	fprintf(stderr, "draw(): IN\n");
 	if (!show_bar)
 		return;
+	draw_separator();
 	draw_bar();
 	draw_tags();
-//	draw_separator();
 
-	XCopyArea(dpy, buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
+	XCopyArea(dpy, bar_buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
 	XRaiseWindow(dpy, bar);
 	XFlush(dpy);
 //	/* DBG */	fprintf(stderr, "draw(): OUT\n");
@@ -822,7 +842,7 @@ void draw_bar(void)
 	XColor color;
 	XAllocNamedColor(dpy, color_map, bar_bg_color, &color, &color);
 	XSetForeground(dpy, gc, color.pixel);
-	XFillRectangle(dpy, buffer, gc, 0, 0, sw, bar_height);
+	XFillRectangle(dpy, bar_buffer, gc, 0, 0, sw, bar_height);
 //	/* DBG */	fprintf(stderr, "draw_bar(): OUT\n");
 }
 
@@ -832,7 +852,7 @@ void draw_rectangle(const char *fill_color, int x, int y, int w, int h)
 	XColor color;
 	XAllocNamedColor(dpy, color_map, fill_color, &color, &color);
 	XSetForeground(dpy, gc, color.pixel);
-	XFillRectangle(dpy, buffer, gc, x, y, w, h);
+	XFillRectangle(dpy, bar_buffer, gc, x, y, w, h);
 //	/* DBG */	fprintf(stderr, "draw_rectangle(): OUT\n");
 }
 
@@ -842,7 +862,7 @@ void draw_string(const char *string_color, const char *string, int x, int h)
 	XColor color;
 	XAllocNamedColor(dpy, color_map, string_color, &color, &color);
 	XSetForeground(dpy, gc, color.pixel);
-	XDrawString(dpy, buffer, gc, x, h, string, strlen(string));
+	XDrawString(dpy, bar_buffer, gc, x, h, string, strlen(string));
 //	/* DBG */	fprintf(stderr, "draw_string(): OUT\n");
 }
 
@@ -1000,13 +1020,6 @@ void draw_tags(void)
 //	/* DBG */	fprintf(stderr, "draw_tags(): OUT\n");
 }
 
-void draw_separator(void)
-{
-//	/* DBG */	fprintf(stderr, "draw_separator(): IN\n");
-	/* TODO */
-//	/* DBG */	fprintf(stderr, "draw_separator(): OUT\n");
-}
-
 void separator_increase(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "separator_increase(): IN\n");
@@ -1017,11 +1030,12 @@ void separator_increase(const Arg *arg)
 		views[cv_id].split_width_x += separator_inc;
 	views[cv_id].rd[views[cv_id].curr_right_id].master_size = (sw - views[cv_id].split_width_x) / 2;
 	views[cv_id].ld[views[cv_id].curr_left_id].master_size = views[cv_id].split_width_x / 2;
+	draw_separator();
 	if (views[cv_id].curr_desk == LEFT)
 		views[cv_id].curr_desk = RIGHT;
-	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	tile_current(0);
 	views[cv_id].curr_desk = LEFT;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	tile_current(0);
 	/* DBG */	fprintf(stderr, "separator_increase(): OUT\n");
 }
 
@@ -1034,11 +1048,12 @@ void separator_decrease(const Arg *arg)
 		views[cv_id].split_width_x -= separator_dec;
 	views[cv_id].rd[views[cv_id].curr_right_id].master_size = (sw - views[cv_id].split_width_x) / 2;
 	views[cv_id].ld[views[cv_id].curr_left_id].master_size = views[cv_id].split_width_x / 2;
+	draw_separator();
 	if (views[cv_id].curr_desk == RIGHT)
 		views[cv_id].curr_desk = LEFT;
-	tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+	tile_current(0);
 	views[cv_id].curr_desk = RIGHT;
-	tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+	tile_current(0);
 	/* DBG */	fprintf(stderr, "separator_decrease(): OUT\n");
 }
 
@@ -1514,11 +1529,13 @@ void setup(void)
 		prepare_draw();
 		XChangeWindowAttributes(dpy, bar, CWOverrideRedirect|CWEventMask, &wa);
 		XMapWindow(dpy, bar);
+		XChangeWindowAttributes(dpy, separator, CWOverrideRedirect|CWEventMask, &wa);
 	}
 	wa.event_mask = SubstructureNotifyMask|SubstructureRedirectMask|PointerMotionMask|
 			EnterWindowMask|LeaveWindowMask|PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
+	
 	
 	/* grab keys & buttons */
 	grabkeys();

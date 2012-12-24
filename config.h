@@ -32,9 +32,9 @@ static const unsigned int border_width    = 4;		/* window border width */
 static const unsigned int border_offset   = 4;		/* spaces betweed windows borders */
 
 /** Separator **/
-static const unsigned int separator_width = 10;		/* width of the split seperator */
-static const unsigned int separator_inc   = 20;		/* separator increase distance */
-static const unsigned int separator_dec   = 20;		/* separator decrease distance */
+static const unsigned int separator_width = 2;		/* width of the split seperator */
+static const unsigned int separator_inc   = 50;		/* separator increase distance */
+static const unsigned int separator_dec   = 50;		/* separator decrease distance */
 
 /** Colors **/
 static const char focus_color[]           = "#d87a16";
