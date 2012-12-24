@@ -27,8 +27,9 @@ static const unsigned int default_right_desktop = 1;
 
 /** Window **/
 static const Bool follow_mouse_focus      = False;
-static const unsigned int border_width    = 2;		/* window border width */
-static const unsigned int border_offset   = 2;		/* spaces betweed windows borders */
+static const Bool click_focus             = True;
+static const unsigned int border_width    = 4;		/* window border width */
+static const unsigned int border_offset   = 4;		/* spaces betweed windows borders */
 
 /** Separator **/
 static const unsigned int separator_width = 10;		/* width of the split seperator */

@@ -239,24 +239,26 @@ void buttonpress(XEvent *e)
 	Client *c = NULL;
 	XButtonEvent ev = e->xbutton;
 
-	if (!(d = get_current_desktop()))
-		return;
-	for (c = d->head; c; c = c->next) {
-		if (c->win == ev.subwindow) {
-			d->curr = c;
-			client_found = True;
-			focuscurrent();
-		}
-	}
-	if (!client_found && ev.subwindow != root) {
-		nextview(0);
+	if (click_focus) {
 		if (!(d = get_current_desktop()))
 			return;
 		for (c = d->head; c; c = c->next) {
 			if (c->win == ev.subwindow) {
 				d->curr = c;
+				client_found = True;
 				focuscurrent();
-				break;
+			}
+		}
+		if (!client_found && ev.subwindow != root) {
+			nextview(0);
+			if (!(d = get_current_desktop()))
+				return;
+			for (c = d->head; c; c = c->next) {
+				if (c->win == ev.subwindow) {
+					d->curr = c;
+					focuscurrent();
+					break;
+				}
 			}
 		}
 	}
@@ -549,14 +551,17 @@ void change_left_desktop(const Arg *arg)
 		XMapWindow(dpy, c->win);
 	views[cv_id].prev_left_id = views[cv_id].curr_left_id;
 	views[cv_id].curr_left_id = arg->i;
-	if (views[cv_id].left_view_activated || views[cv_id].right_view_activated
-	 || views[cv_id].curr_desk == LEFT)
-		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	if (views[cv_id].curr_desk == RIGHT) {
+
+	if (views[cv_id].curr_desk == LEFT) {
+		tile(n);
+	} else if (views[cv_id].curr_desk == RIGHT) {
 		views[cv_id].curr_desk = LEFT;
-		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+		tile(n);
 		views[cv_id].curr_desk = RIGHT;
+	} else if (views[cv_id].left_view_activated) {
+		tile(n);
 	}
+
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_left_desktop(): OUT\n");
 	/* DBG */	printstatus();
@@ -580,14 +585,17 @@ void change_right_desktop(const Arg *arg)
 			XMapWindow(dpy, c->win);
 	views[cv_id].prev_right_id = views[cv_id].curr_right_id;
 	views[cv_id].curr_right_id = arg->i;
-	if (views[cv_id].left_view_activated || views[cv_id].right_view_activated
-	 || views[cv_id].curr_desk == RIGHT)
-		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
-	if (views[cv_id].curr_desk == LEFT) {
+	
+	if (views[cv_id].curr_desk == RIGHT) {
+		tile(n);
+	} else if (views[cv_id].curr_desk == LEFT) {
 		views[cv_id].curr_desk = RIGHT;
-		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+		tile(n);
 		views[cv_id].curr_desk = LEFT;
+	} else if (views[cv_id].right_view_activated) {
+		tile(n);
 	}
+
 	focuscurrent();
 	/* DBG */	fprintf(stderr, "change_right_desktop(): OUT\n");
 	/* DBG */	printstatus();
@@ -741,30 +749,35 @@ void activate_right_view(const Arg *arg)
 void activate_both_views(const Arg *arg)
 {
 	/* DBG */	fprintf(stderr, "activate_both_views(): IN\n");
-	if (views[cv_id].both_views_activated) {
-	/* DBG */	fprintf(stderr, "activate_both_views(): BOTH ALREADY ACTIVATED\n");
+	if (views[cv_id].both_views_activated)
 		return;
-	}
+	unsigned int i;
 	views[cv_id].split_width_x = sw / 2;
+
 	if (views[cv_id].curr_desk == LEFT && views[cv_id].left_view_activated) {
 		views[cv_id].curr_desk = RIGHT;
 		previous_desktop(0);
 		views[cv_id].curr_desk = LEFT;
-		views[cv_id].ld[views[cv_id].curr_left_id].layout = TILE;
-		views[cv_id].ld[views[cv_id].curr_left_id].master_size =
-			 ((master_size != 0) ? (master_size) : (views[cv_id].split_width_x / 2));
+		for (i = 1; i <= DESKTOPS_LEFT; i++) {
+			views[cv_id].ld[i].layout = TILE;
+			views[cv_id].ld[i].master_size =
+				((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
+			tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
+		}
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
-	/* DBG */	fprintf(stderr, "activate_both_views(): LEFT\n");
-	} else if (views[cv_id].curr_desk == RIGHT && views[cv_id].right_view_activated) {
+	} else {
 		views[cv_id].curr_desk = LEFT;
-		previous_desktop(0);
+			previous_desktop(0);
 		views[cv_id].curr_desk = RIGHT;
-		views[cv_id].rd[views[cv_id].curr_right_id].layout = TILE;
-		views[cv_id].rd[views[cv_id].curr_right_id].master_size =
-			 ((master_size != 0) ? (master_size) : (views[cv_id].split_width_x / 2));
+		for (i = 1; i <= DESKTOPS_RIGHT; i++) {
+			views[cv_id].rd[i].layout = TILE;
+			views[cv_id].rd[i].master_size =
+				((master_size) ? (master_size) : (views[cv_id].split_width_x / 2));
+			tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
+		}
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);
-	/* DBG */	fprintf(stderr, "activate_both_views(): RIGHT\n");
 	}
+
 	views[cv_id].left_view_activated = False;
 	views[cv_id].right_view_activated = False;
 	views[cv_id].both_views_activated = True;
