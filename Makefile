@@ -1,4 +1,4 @@
-cflags+= -std=c99 -Wall -Werror -pedantic -Os
+cflags+= -std=std99 -Wall -Werror -pedantic -Os
 LDFLAGS=-lX11
 EXEC=splitwm
 CC=cc
