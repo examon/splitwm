@@ -7,10 +7,14 @@
 static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 
 /** Bar **/
-static const Bool show_bar = True;		/* False to hide bar */
+static const int bar_position = TOP;		/* TOP, BOTTOM or NONE */
 static const char *tile_tag = "[T]";		/* Tile tag shown in bar */
 static const char *float_tag = "[F]";		/* Float tag shown in bar */
 static const unsigned int char_space = 5; 	/* Spaces between bar tags */
+
+/** External bar **/
+static const int external_bar_position = NONE;	/* TOP, BOTTOM or NONE */
+static const int external_bar_height = 20;	/* external bar height in pixels */
 
 /** Views **/
 static const char *tags_views[] = { "1", "2", "3", "4", "5" };	/* max 9 */
@@ -32,7 +36,8 @@ static const unsigned int border_width    = 4;		/* window border width */
 static const unsigned int border_offset   = 4;		/* spaces betweed windows borders */
 
 /** Separator **/
-static const unsigned int separator_width = 2;		/* width of the split seperator */
+static const Bool show_separator = True;		/* False to hide separator */
+static const unsigned int separator_width = 4;		/* width of the split seperator */
 static const unsigned int separator_inc   = 50;		/* separator increase distance */
 static const unsigned int separator_dec   = 50;		/* separator decrease distance */
 
@@ -66,7 +71,7 @@ static const char view_tag_occupied_fg[]  = "#bbbbbb";
 
 /** Commands **/
 static const char *spawn_terminal[] = { "urxvt", NULL };
-static const char *spawn_dmenu[]    = { "dmenu_run", "-fn", font, "-nb", bar_bg_color, "-nf", view_tag_normal_fg, "-sb", focus_color, "-sf", bar_bg_color, NULL };
+static const char *spawn_dmenu[]    = { "dmenu_run", "-fn", font, "-nb", bar_bg_color, "-nf", view_tag_normal_fg, "-sb", bar_bg_color, "-sf", focus_color, NULL };
 
 /** Modifiers **/
 #define MOD1		Mod1Mask	/* ALT key */
