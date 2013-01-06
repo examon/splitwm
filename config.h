@@ -17,7 +17,7 @@ static const int external_bar_position = NONE;	/* TOP, BOTTOM or NONE */
 static const int external_bar_height = 20;	/* external bar height in pixels */
 
 /** Views **/
-static const char *tags_views[] = { "1", "2", "3", "4", "5" };	/* max 9 */
+static const char *tags_views[] = { "one", "two", "three" };	/* max 9 */
 static const unsigned int default_view = 1;	/* default view */
 
 /** Desktops **/
@@ -33,7 +33,7 @@ static const unsigned int default_right_desktop = 1;
 static const Bool follow_mouse_focus      = False;
 static const Bool click_focus             = True;
 static const unsigned int border_width    = 4;		/* window border width */
-static const unsigned int border_offset   = 4;		/* spaces betweed windows borders */
+static const unsigned int border_offset   = 0;		/* spaces betweed windows borders */
 
 /** Separator **/
 static const Bool show_separator = True;		/* False to hide separator */
@@ -46,7 +46,6 @@ static const char focus_color[]           = "#d87a16";
 static const char left_unfocus_color[]    = "#005577";
 static const char right_unfocus_color[]   = "#288428";
 static const char bar_bg_color[]          = "#111111";
-static const char bar_title_color[]       = "#bbbbbb";
 
 static const char left_tag_focus_bg[]     = "#005577";
 static const char left_tag_focus_fg[]     = "#eeeeee";
