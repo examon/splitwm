@@ -30,8 +30,7 @@ static const unsigned int default_left_desktop  = 1;
 static const unsigned int default_right_desktop = 1;
 
 /** Window **/
-static const Bool follow_mouse_focus      = False;
-static const Bool click_focus             = True;
+static const Bool follow_mouse_focus      = True;
 static const unsigned int border_width    = 4;		/* window border width */
 static const unsigned int border_offset   = 0;		/* spaces betweed windows borders */
 
