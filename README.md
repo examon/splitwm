@@ -4,4 +4,5 @@ WM able to "split" screen into two virtual screens (it can emulate dual screen s
 
 *note* this project is still in the experimental stage, things might be really unstable :-)
 
-![demo](https://github.com/examon/splitwm/img/demo.png)
+
+![demo](https://raw.github.com/examon/splitwm/master/img/demo.png)
