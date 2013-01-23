@@ -98,7 +98,6 @@ void draw(void)
 		draw_bar();
 		draw_tags();
 		XCopyArea(dpy, bar_buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-		XRaiseWindow(dpy, bar);
 		XFlush(dpy);
 	}
 	dbg("draw(): OUT\n");

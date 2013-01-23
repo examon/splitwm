@@ -44,6 +44,7 @@ void kill_client(const Arg *arg)
 		dbg("kill_client(): n < 0\n");
 	} else {
 		send_kill_signal(d->curr->win);
+		removewindow(d->curr->win);
 		dbg("kill_client(): else\n");
 	}
 	
@@ -245,6 +246,7 @@ void removewindow(Window w)
 				dbg("removewindow(): HEAD ONLY WINDOW\n");
 				d->head = NULL;
 				d->curr = NULL;
+				draw();
 				return;
 			} else if (!c->prev) {
 				dbg("removewindow(): HEAD WINDOW\n");
@@ -262,6 +264,10 @@ void removewindow(Window w)
 				d->curr = c->next;
 			}
 			free(c);
+			if (d->layout == TILE)
+				tile(d);
+			focuscurrent();
+			draw();
 			return;
 		}
 	}
@@ -311,7 +317,6 @@ void focuscurrent(void)
 					XSetWindowBorder(dpy, n->win, left_win_unfocus);
 			}
 			XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
-			//XRaiseWindow(dpy, c->win);
 			XSync(dpy, False);
 		} else {
 			if (views[cv_id].curr_desk == LEFT) {

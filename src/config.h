@@ -5,42 +5,50 @@
 
 #include "view.h"
 
+
 /** Font **/
 #define  FONT	"-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*"
+
 
 /** Bar **/
 #define  BAR_POSITION	TOP	/* TOP, BOTTOM or NONE */
 #define  TILE_TAG	"[T]"	/* Tile tag shown in bar */
-#define  FLOAT_TAG	"[f]"	/* float tag shown in bar */
+#define  FLOAT_TAG	"[F]"	/* float tag shown in bar */
 #define  CHAR_SPACE	5 	/* spaces between bar tags */
+
 
 /** external bar **/
 #define  EXTERNAL_BAR_POSITION	NONE	/* TOP, BOTTOM or NONE */
 #define  EXTERNAL_BAR_HEIGHT	20	/* external bar height in pixels */
 
+
 /** Views **/
-static const char *tags_views[] = { "one", "two", "three" };	/* max 9 */
+static const char *tags_views[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
 #define  DEFAULT_VIEW  1	/* default view */
 
+
 /** Desktops **/
-static const char  *tags_left[]  = { "1", "2", "3" };		/* max 9 */
-static const char  *tags_right[] = { "1", "2", "3", "4" };	/* max 9 */
-#define  MASTER_SIZE  		0	/* master window size, if 0 then master_size = screen_width / 2 */
-#define  MASTER_SIZE_INC	20 	/* master_size increase distance */
-#define  MASTER_SIZE_DEC	20 	/* master_size decrease distance */
+static const char  *tags_left[]  = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
+static const char  *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
 #define  DEFAULT_LEFT_DESKTOP	1
 #define  DEFAULT_RIGHT_DESKTOP	1
+#define  MASTER_SIZE  		0	/* master window size, if 0 then master_size = screen_width/2 */
+#define  MASTER_SIZE_INC	20 	/* master_size increase distance */
+#define  MASTER_SIZE_DEC	20 	/* master_size decrease distance */
+
 
 /** Window **/
 #define  FOLLOW_MOUSE_FOCUS	True
 #define  BORDER_WIDTH		4	/* window border width */
-#define  BORDER_OFFSET		0	/* spaces betweed windows borders */
+#define  BORDER_OFFSET		2	/* spaces betweed windows borders */
+
 
 /** Separator **/
 #define  SHOW_SEPARATOR		True	/* False to hide separator */
 #define  SEPARATOR_WIDTH	4	/* width of the split seperator */
 #define  SEPARATOR_INC		50	/* separator increase distance */
 #define  SEPARATOR_DEC		50	/* separator decrease distance */
+
 
 /** Colors **/
 #define  FOCUS_COLOR            "#d87a16"
@@ -69,17 +77,21 @@ static const char  *tags_right[] = { "1", "2", "3", "4" };	/* max 9 */
 #define  VIEW_TAG_OCCUPIED_BG   "#bbbbbb"
 #define  VIEW_TAG_OCCUPIED_FG   "#bbbbbb"
 
+
 /** Commands **/
 static const char  *spawn_terminal[] = { "urxvt", NULL };
 static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG_COLOR, "-nf", VIEW_TAG_NORMAL_FG, "-sb", BAR_BG_COLOR, "-sf", FOCUS_COLOR, NULL };
+
 
 /** Modifiers **/
 #define MOD1		Mod1Mask	/* ALT key */
 #define MOD4		Mod4Mask	/* Super/Win key */
 #define SHIFT		ShiftMask	/* Shift key */
 
+
 /** Cursor **/
 #define CURSOR		XC_left_ptr	/* default cursor */
+
 
 /** Anti-multiple paste macro **/
 #define CLIENT_TO_DESKTOP(K, N) \
@@ -89,6 +101,7 @@ static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG
 #define CHANGE_VIEW(K, N) \
 	{  MOD1,             K,             change_view,            { .i = N }}, \
 	{  MOD4,             K,             change_view,            { .i = N }},
+
 
 /** Keyboard shortcuts **/
 static Key keys[] = {
@@ -159,6 +172,7 @@ static Key keys[] = {
 	CLIENT_TO_DESKTOP(   XK_9,                                    9)
 };
 
+
 /** Mouse shortcuts **/
 static Button buttons[] = {
 	/* event mask        buttoon        function           argument */
@@ -168,6 +182,8 @@ static Button buttons[] = {
 	{  MOD4,             Button3,       mousemove,         { .i = RESIZE }}
 };
 
+
 #endif /* _CONFIG_H */
+
 
 /* vim: set ts=8 sts=8 sw=8 : */
