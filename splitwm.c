@@ -345,7 +345,7 @@ void expose(XEvent *e)
 	if (ex->window == bar || (ex->window != bar && ex->window != root)) {
 		dbg("expose(): \tBAR\n");
 		XCopyArea(dpy, bar_buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-		XRaiseWindow(dpy, bar);
+		//XRaiseWindow(dpy, bar);
 		XFlush(dpy);
 	}
 	/* DBG */	dbg("expose(): OUT\n");
@@ -865,9 +865,9 @@ void draw_separator(void)
 	/* DBG */	dbg("draw_separator(): IN\n");
 	move_resize_window(separator,
 			   views[cv_id].split_width_x - separator_width/2,
-			   0,
+			   (bar_position == TOP ? bar_height : 0),
 			   separator_width,
-			   sh);
+			   (bar_position == BOTTOM ? sh - bar_height : sh));
 	/* DBG */	dbg("draw_separator(): OUT\n");
 }
 
@@ -880,7 +880,7 @@ void draw(void)
 		draw_bar();
 		draw_tags();
 		XCopyArea(dpy, bar_buffer, bar, gc, 0, 0, sw, bar_height, 0, 0);
-		XRaiseWindow(dpy, bar);
+		//XRaiseWindow(dpy, bar);
 		XFlush(dpy);
 	}
 	/* DBG */	dbg("draw(): OUT\n");

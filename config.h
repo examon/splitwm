@@ -7,13 +7,13 @@
 static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 
 /** Bar **/
-static const int bar_position = TOP;		/* TOP, BOTTOM or NONE */
+static const int bar_position = BOTTOM;		/* TOP, BOTTOM or NONE */
 static const char *tile_tag = "[T]";		/* Tile tag shown in bar */
 static const char *float_tag = "[F]";		/* Float tag shown in bar */
 static const unsigned int char_space = 5; 	/* Spaces between bar tags */
 
 /** External bar **/
-static const int external_bar_position = NONE;	/* TOP, BOTTOM or NONE */
+static const int external_bar_position = TOP;	/* TOP, BOTTOM or NONE */
 static const int external_bar_height = 20;	/* external bar height in pixels */
 
 /** Views **/
