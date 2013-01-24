@@ -239,4 +239,4 @@ void expose(XEvent *e)
 }
 
 
-/* vim: set expandtab ts=8 sts=8 sw=8 : */
+/* vim: set ts=8 sts=8 sw=8 : */
