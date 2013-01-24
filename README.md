@@ -6,7 +6,7 @@ WM able to "split" screen into two virtual screens (it can emulate dual screen s
 
 ## Video
 
-Click [here](https://vimeo.com/58112758) to watch short demonstration video.
+Click [here](https://vimeo.com/58112758).
 
 ## Screenshots
 
