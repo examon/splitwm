@@ -106,7 +106,7 @@ static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG
 /** Keyboard shortcuts **/
 static Key keys[] = {
 	/* modifier          key            function                argument */
-	{  MOD1|SHIFT,       XK_q,          quit,                   { 0 }},
+	//{  MOD1|SHIFT,       XK_q,          quit,                   { 0 }},
 	{  MOD1,             XK_j,          nextwindow,             { 0 }},
 	{  MOD4,             XK_j,          nextview,               { 0 }},
 	{  MOD4|SHIFT,       XK_j,          client_to_view,         { 0 }},

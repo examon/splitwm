@@ -1,47 +1,35 @@
 /* See LICENSE file for copyright and license details */
-
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/extensions/XTest.h>
 
-#include "test.h"
 
 Display *dpy;
 
-int main(void)
+void test_key(const char *key, int type, unsigned long delay);
+
+int main(int argc, char *argv[])
 {
-	if (!(dpy = XOpenDisplay(NULL)))
+	if (!(dpy = XOpenDisplay(NULL))) {
+		fprintf(stderr, "%s error: cannot open display!\n", argv[0]);
 		return EXIT_FAILURE;
-
-	/*
-	unsigned int i;
-	for (i = 0; i < 10; i++) {
-		test_key("Super_L", 1, 0);
-		test_key("1", 1, 500);
-		test_key("Super_L", 0, 0);
-		test_key("1", 0, 0);
-
-		test_key("Super_L", 1, 0);
-		test_key("3", 1, 500);
-		test_key("Super_L", 0, 0);
-		test_key("3", 0, 0);
-	}
-	*/
-
-	unsigned int i;
-
-	for (i = 0; i < LENGTH(alphabet); i++) {
-		printf("%s\t%d\n", alphabet[i], XKeysymToKeycode(dpy, XStringToKeysym(alphabet[i])));
-	}
-	for (i = 0; i < LENGTH(mods); i++) {
-		printf("%s\t\t%d\n", mods[i], XKeysymToKeycode(dpy, XStringToKeysym(mods[i])));
 	}
 
+	if (argc == 2 && !strcmp(argv[1], "-h")) {
+		printf("%s [-h] keycode key_type delay\n", argv[0]);
+		return EXIT_FAILURE;
+	} else if (argc != 4) {
+		fprintf(stderr, "%s error: invalid arguments, use %s -h for help\n", argv[0], argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	test_key(argv[1], atoi(argv[2]), (unsigned long)atoi(argv[3]));
 	XCloseDisplay(dpy);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void test_key(const char *key, int type, unsigned long delay)
