@@ -169,9 +169,12 @@ void fullscreen(const Arg *arg)
 
 	if (!(d = get_current_desktop()))
 		return;
-	if (d->curr)
-		XMoveResizeWindow(dpy, d->curr->win, 0, bar_height,
-				  sw - 2 * BORDER_WIDTH, sh - 2 * BORDER_WIDTH - bar_height);
+	if (d->curr) {
+		XMoveResizeWindow(dpy, d->curr->win,
+				  -BORDER_WIDTH, -BORDER_WIDTH, sw, sh);
+		XRaiseWindow(dpy, d->curr->win);
+	}
+
 	dbg("fullscreen(): OUT\n");
 }
 
