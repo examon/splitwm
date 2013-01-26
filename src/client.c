@@ -35,7 +35,7 @@ void kill_client(const Arg *arg)
 
 	if (XGetWMProtocols(dpy, d->curr->win, &prot, &n)) {
 		while (--n >= 0 && prot[n] != wmatoms[WM_DELETE_WINDOW])
-			;
+			dbg("kill_client(): while\n");
 	}
 
 	if (n < 0) {
