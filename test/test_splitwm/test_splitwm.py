@@ -24,7 +24,7 @@ from min_set import alphabet, butns, mods
 
 
 # can change this
-path = "/home/exo/Github/splitwm/test/xfakeevent/xfakeevent"
+path = "/usr/bin/local/xfakeevent"
 apps = [ "Terminal", "xterm", "gedit" ]
 
 
