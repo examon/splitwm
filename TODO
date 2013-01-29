@@ -1,6 +1,7 @@
 TODO
 ====
 
+ * implement vertical stack & grid tiling modes
  * improve kill_client()
  * write some doc
  * polish code
