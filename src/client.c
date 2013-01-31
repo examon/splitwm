@@ -159,6 +159,7 @@ void nextwindow(const Arg *arg)
 		}
 	}
 	focuscurrent();
+	//XRaiseWindow(dpy, d->curr->win);
 	dbg("nextwindow(): OUT\n");
 }
 
@@ -267,7 +268,7 @@ void removewindow(Window w)
 				d->curr = c->next;
 			}
 			free(c);
-			if (d->layout == TILE)
+			if (d->tile_or_float == TILE)
 				tile(d);
 			focuscurrent();
 			draw();

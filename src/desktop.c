@@ -142,7 +142,7 @@ void toggle_float(const Arg *arg)
 
 	if (!(d = get_current_desktop()))
 		return;
-	d->layout = FLOAT;
+	d->tile_or_float = FLOAT;
 	draw();
 	/* DBG */	dbg("toggle_current(): OUT\n");
 }

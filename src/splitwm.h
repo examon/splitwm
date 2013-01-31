@@ -16,6 +16,7 @@
 enum { MOVE, RESIZE };
 enum { LEFT, RIGHT };
 enum { TILE, FLOAT };
+enum { GRID, MASTER };
 enum { TOP, BOTTOM, NONE };
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 

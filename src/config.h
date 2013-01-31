@@ -12,9 +12,11 @@
 
 /** Bar **/
 #define  BAR_POSITION	TOP	/* TOP, BOTTOM or NONE */
-#define  TILE_TAG	"[T]"	/* Tile tag shown in bar */
-#define  FLOAT_TAG	"[F]"	/* float tag shown in bar */
 #define  CHAR_SPACE	5 	/* spaces between bar tags */
+
+#define  GRID_TILE_TAG		"[grid]"	/* grid tile layout tag shown in bar */
+#define  MASTER_TILE_TAG	"[master]"	/* master tile layout tag shown in bar */
+#define  FLOAT_TAG		"[float]"	/* float tag shown in bar */
 
 
 /** external bar **/
@@ -40,7 +42,7 @@ static const char  *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9"
 /** Window **/
 #define  FOLLOW_MOUSE_FOCUS	True
 #define  BORDER_WIDTH		4	/* window border width */
-#define  BORDER_OFFSET		2	/* spaces betweed windows borders */
+#define  BORDER_OFFSET		4	/* spaces betweed windows borders */
 
 
 /** Separator **/
@@ -106,7 +108,12 @@ static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG
 /** Keyboard shortcuts **/
 static Key keys[] = {
 	/* modifier          key            function                argument */
-	//{  MOD1|SHIFT,       XK_q,          quit,                   { 0 }},
+
+	{  MOD1|SHIFT,       XK_g,          tile_layout_grid,       { 0 }},
+	{  MOD1|SHIFT,       XK_m,          tile_layout_master,     { 0 }},
+	{  MOD1,             XK_t,          tile_current,           { 0 }},
+
+	{  MOD1|SHIFT,       XK_q,          quit,                   { 0 }},
 	{  MOD1,             XK_j,          nextwindow,             { 0 }},
 	{  MOD4,             XK_j,          nextview,               { 0 }},
 	{  MOD4|SHIFT,       XK_j,          client_to_view,         { 0 }},
@@ -117,7 +124,7 @@ static Key keys[] = {
 	{  MOD1|SHIFT,       XK_c,          kill_client,            { 0 }},
 	{  MOD4|SHIFT,       XK_c,          kill_client,            { 0 }},
 	{  MOD1,             XK_f,          fullscreen,             { 0 }},
-	{  MOD1,             XK_t,          tile_current,           { 0 }},
+
 	{  MOD1|SHIFT,       XK_f,          toggle_float,           { 0 }},
 	{  MOD1,             XK_space,      maximize_current,       { 0 }},
 	{  MOD1,             XK_Tab,        previous_desktop,       { 0 }},

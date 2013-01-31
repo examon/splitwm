@@ -8,8 +8,10 @@
 
 /** Functions **/
 
-void tile(Desktop *d);
-void tile_current(const Arg *arg);
+extern void tile(Desktop *d);
+extern void tile_layout_master(const Arg *arg);
+extern void tile_layout_grid(const Arg *arg);
+extern void tile_current(const Arg *arg);
 
 
 #endif /* _TILE_H */

@@ -69,13 +69,13 @@ void activate_both_views(const Arg *arg)
 	views[cv_id].split_width_x = sw / 2;
 
 	for (i = 1; i <= DESKTOPS_LEFT; i++) {
-		views[cv_id].ld[i].layout = TILE;
+		views[cv_id].ld[i].tile_or_float = TILE;
 		views[cv_id].ld[i].master_size =
 			((MASTER_SIZE) ? (MASTER_SIZE) : (views[cv_id].split_width_x / 2));
 		tile(&views[cv_id].ld[views[cv_id].curr_left_id]);
 	}
 	for (i = 1; i <= DESKTOPS_RIGHT; i++) {
-		views[cv_id].rd[i].layout = TILE;
+		views[cv_id].rd[i].tile_or_float = TILE;
 		views[cv_id].rd[i].master_size =
 			((MASTER_SIZE) ? (MASTER_SIZE) : (views[cv_id].split_width_x / 2));
 		tile(&views[cv_id].rd[views[cv_id].curr_right_id]);

@@ -15,7 +15,22 @@
 
 void tile(Desktop *d)
 {
-	/* DBG */	dbg("tile(): IN\n");
+	dbg("tile(): IN\n");
+	if (d->tile_or_float == FLOAT)
+		return;
+	
+	if (d->layout == MASTER) {
+		tile_layout_master(0);
+	} else if (d->layout == GRID) {
+		tile_layout_grid(0);
+	}
+	draw();
+	dbg("tile(): OUT\n");
+}
+
+void tile_layout_master(const Arg *arg)
+{
+	dbg("tile_layout_master(): IN\n");
 	/** 
 	 * +-----+---+
 	 * |     |   |
@@ -26,10 +41,15 @@ void tile(Desktop *d)
 	 * +-----+---+
 	 */
 
-	if (d->layout == FLOAT)
-		return;
-
 	Client *c = NULL;
+	Desktop *d = NULL;
+
+	if (!(d = get_current_desktop()))
+		return;
+	d->tile_or_float = TILE;
+	d->layout = MASTER;
+	draw();
+
 	int n = 0;
 	int bar = 0;
 	int ext_top_bar = 0;
@@ -96,21 +116,131 @@ void tile(Desktop *d)
 			y += (views[cv_id].split_height_y - ext_bottom_bar - ext_top_bar) / n;
 		}
 	}
-	d->layout = TILE;
-	draw();
-	/* DBG */	dbg("tile(): OUT\n");
+	dbg("tile_layout_master(): OUT\n");
 }
 
-void tile_current(const Arg *arg)
+void tile_layout_grid(const Arg *arg)
 {
-	/* DBG */	dbg("tile_current(): IN\n");
+	dbg("tile_layout_grid(): IN\n");
+	/** 
+	 * +---+---+---+
+	 * |   |   |   |
+	 * |---+---+---+
+	 * |   |   |   |
+	 * |---+---+---+
+	 * |   |   |   |
+	 * +---+---+---+
+	 */
+
+	Client *c = NULL;
 	Desktop *d = NULL;
 
 	if (!(d = get_current_desktop()))
 		return;
-	d->layout = TILE;
+	d->tile_or_float = TILE;
+	d->layout = GRID;
+	draw();
+
+	int n = 0;
+	for (Client *c = d->head; c; c = c->next)
+		++n;
+
+	int cols = 0;
+	int cn = 0;
+	int rn = 0;
+	int i = -1;
+	for (cols = 0; cols <= n / 2; cols++) {
+		if (cols * cols >= n)
+			break;
+	}
+
+	if (n == 0) {
+		return;
+	} else if (n == 5) {
+		cols = 2;
+	}
+
+	int rows = n / cols;
+	int sep = ((views[cv_id].right_view_activated) ? (0) : (SEPARATOR_WIDTH / 2));
+
+	int bar = 0;
+	int ext_top_bar = 0;
+	int ext_bottom_bar = 0;
+
+	if (BAR_POSITION == TOP) {
+		bar = bar_height;
+	} else if (BAR_POSITION == BOTTOM || BAR_POSITION == NONE) {
+		bar = 0;
+	}
+	if (EXTERNAL_BAR_POSITION == TOP && BAR_POSITION != TOP) {
+		ext_top_bar = EXTERNAL_BAR_HEIGHT;
+	} else if (EXTERNAL_BAR_POSITION == BOTTOM && BAR_POSITION != BOTTOM) {
+		ext_bottom_bar = EXTERNAL_BAR_HEIGHT;
+	}
+
+	int x, y, w, h;
+
+	if (d->head && !d->head->next) {
+		maximize(d->head->win);
+		return;
+	} else if (d->head && views[cv_id].curr_desk == LEFT) {
+		x = BORDER_OFFSET;
+		y = BORDER_OFFSET + bar + ext_top_bar;
+		w = views[cv_id].split_width_x - sep;
+		h = views[cv_id].split_height_y - ext_bottom_bar - ext_top_bar;
+	} else if (d->head && views[cv_id].curr_desk == RIGHT) {
+		x = views[cv_id].split_width_x + BORDER_OFFSET + sep;
+		y = BORDER_OFFSET + bar + ext_top_bar;
+		w = sw - views[cv_id].split_width_x - sep;
+		h = views[cv_id].split_height_y - ext_bottom_bar - ext_top_bar;
+	}
+
+	int ch = h - BORDER_WIDTH - BORDER_OFFSET;
+	int cw = (w - BORDER_WIDTH - BORDER_OFFSET) / (cols ? cols:1);
+	int x_adj = 0;
+	int rn_max = rn;
+
+	for (c = d->head; c; c = c->next) {
+		++i;
+		if (i / rows + 1 > cols - n % cols)
+			rows = n / cols + 1;
+		move_resize_window(c->win,
+				   x + cn * cw + x_adj,
+				   y + rn * ch / rows + (rn > 0 ? BORDER_WIDTH : 0),
+				   cw - BORDER_WIDTH - BORDER_OFFSET,
+				   ch / rows - (rn + 1) * BORDER_WIDTH - BORDER_OFFSET);
+		if (rn_max < rn)
+			rn_max = rn;
+		if (++rn >= rows) {
+			rn = 0;
+			cn++;
+			x_adj += BORDER_WIDTH;
+		}
+	}
+
+	/* adjust the most right window borders */
+	unsigned int cnt = 1;
+	XWindowAttributes wa;
+	for (c = d->head; c; c = c->next) {
+		if (cnt++ >= n - rn_max) {
+			XGetWindowAttributes(dpy, c->win, &wa);
+			XResizeWindow(dpy, c->win, wa.width - (cn - 1) * BORDER_WIDTH, wa.height);
+		}
+	}
+	dbg("tile_layout_grid(): OUT\n");
+}
+
+
+void tile_current(const Arg *arg)
+{
+	dbg("tile_current(): IN\n");
+	Desktop *d = NULL;
+
+	if (!(d = get_current_desktop()))
+		return;
+	d->tile_or_float = TILE;
 	tile(d);
-	/* DBG */	dbg("tile_current(): OUT\n");
+	dbg("tile_current(): OUT\n");
 }
 
 

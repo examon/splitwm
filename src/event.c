@@ -111,7 +111,7 @@ void configurerequest(XEvent *e)
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
-	d->layout = FLOAT;
+	d->tile_or_float = FLOAT;
 	tile(d);
 	dbg("cofigurerequest(): OUT\n");
 }
@@ -173,7 +173,7 @@ void maprequest(XEvent *e)
 	addwindow(ev->window);
 	XMapWindow(dpy, ev->window);
 	if (views[cv_id].both_views_activated)
-		d->layout = TILE;
+		d->tile_or_float = TILE;
 	tile(d);
 	focuscurrent();
 	XGetWindowAttributes(dpy, d->curr->win, &wa);

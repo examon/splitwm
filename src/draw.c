@@ -171,8 +171,14 @@ void draw_tags(void)
 		}
 
 		/* Draw layout tag for left desktop */
-		if (views[cv_id].ld[views[cv_id].curr_left_id].layout == TILE) {
-			sprintf(c, "%s", TILE_TAG);
+		if (views[cv_id].ld[views[cv_id].curr_left_id].tile_or_float == TILE) {
+			if (views[cv_id].ld[views[cv_id].curr_left_id].layout == MASTER) {
+				sprintf(c, "%s", MASTER_TILE_TAG);
+			} else if (views[cv_id].ld[views[cv_id].curr_left_id].layout == GRID) {
+				sprintf(c, "%s", GRID_TILE_TAG);
+			} else {
+				sprintf(c, "%s", "X");
+			}
 		} else {
 			sprintf(c, "%s", FLOAT_TAG);
 		}
@@ -228,8 +234,16 @@ void draw_tags(void)
 			x_right -= strlen(tags_right[i]) * char_width + 2 * CHAR_SPACE;
 
 		/* draw layout tag for right desktop */
-		if (views[cv_id].rd[views[cv_id].curr_right_id].layout == TILE) {
-			sprintf(c, "%s", TILE_TAG);
+		if (views[cv_id].rd[views[cv_id].curr_right_id].tile_or_float == TILE) {
+
+			if (views[cv_id].rd[views[cv_id].curr_right_id].layout == MASTER) {
+				sprintf(c, "%s", MASTER_TILE_TAG);
+			} else if (views[cv_id].rd[views[cv_id].curr_right_id].layout == GRID) {
+				sprintf(c, "%s", GRID_TILE_TAG);
+			} else {
+				sprintf(c, "%s", "X");
+			}
+
 		} else {
 			sprintf(c, "%s", FLOAT_TAG);
 		}

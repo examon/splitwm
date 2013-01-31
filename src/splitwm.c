@@ -188,18 +188,20 @@ void setup(void)
 		for (j = 0; j <= DESKTOPS_LEFT; j++) {
 			views[i].ld[j].head = NULL;
 			views[i].ld[j].curr = NULL;
-			views[i].ld[j].layout = TILE;
 			views[i].ld[j].master_size =
 				((MASTER_SIZE != 0) ? (MASTER_SIZE)
 				: (views[cv_id].split_width_x / 2));
+			views[i].ld[j].tile_or_float = TILE;
+			views[i].ld[j].layout = GRID;
 		}
 		for (k = 0; k <= DESKTOPS_RIGHT; k++) {
 			views[i].rd[k].head = NULL;
 			views[i].rd[k].curr = NULL;
-			views[i].rd[k].layout = TILE;
 			views[i].rd[k].master_size =
 				((MASTER_SIZE != 0) ? (MASTER_SIZE)
 				: (views[cv_id].split_width_x / 2));
+			views[i].rd[k].tile_or_float = TILE;
+			views[i].ld[j].layout = GRID;
 		}
 	}
 

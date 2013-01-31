@@ -13,6 +13,7 @@ typedef struct {
 	Client *curr;
 	int master_size;
 	int layout;
+	int tile_or_float;
 } Desktop;
 
 
