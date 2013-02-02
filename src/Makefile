@@ -15,9 +15,7 @@ clean:
 
 install:
 	@echo "installing $(EXEC) to $(BINPREFIX)"
-	@mkdir -p "$(BINPREFIX)"
-	@cp $(EXEC) "$(BINPREFIX)"
-	@chmod 755 "$(BINPREFIX)/$(EXEC)"
+	@install -Dm755 ${EXEC} $(BINPREFIX)/${EXEC}
 
 uninstall:
 	@echo "removing $(EXEC) from $(BINPREFIX)"
