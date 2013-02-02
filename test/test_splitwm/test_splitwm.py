@@ -24,7 +24,7 @@ from min_set import alphabet, butns, mods
 
 
 # can change this
-path = "/usr/bin/local/xfakeevent"
+path = "/usr/local/bin/xfakeevent"
 apps = [ "Terminal", "xterm", "gedit" ]
 
 
