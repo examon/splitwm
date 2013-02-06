@@ -1,4 +1,5 @@
-CFLAGS = -lX11 -std=c99 $(OPT)
+CFLAGS = -std=c99 $(OPT)
+LIBS = -lX11
 CC = gcc
 OPT = -Os
 SRC = splitwm.c mouse.c tile.c desktop.c draw.c client.c grab.c event.c view.c dbg.c
@@ -7,7 +8,7 @@ EXEC = splitwm
 PREFIX ?= /usr/local
 
 cleanwn: $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $(EXEC)
+	$(CC) $(CFLAGS) $(OBJ) -o $(EXEC) $(LIBS)
 
 clean:
 	@echo cleaning
