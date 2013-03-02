@@ -11,8 +11,6 @@
 #include "dbg.h"
 
 
-/** Functions **/
-
 void tile(Desktop *d)
 {
 	dbg("tile(): IN\n");
@@ -122,6 +120,7 @@ void tile_layout_master(const Arg *arg)
 void tile_layout_grid(const Arg *arg)
 {
 	dbg("tile_layout_grid(): IN\n");
+
 	/** 
 	 * +---+---+---+
 	 * |   |   |   |
@@ -230,7 +229,6 @@ void tile_layout_grid(const Arg *arg)
 	dbg("tile_layout_grid(): OUT\n");
 }
 
-
 void tile_current(const Arg *arg)
 {
 	dbg("tile_current(): IN\n");
@@ -242,6 +240,5 @@ void tile_current(const Arg *arg)
 	tile(d);
 	dbg("tile_current(): OUT\n");
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

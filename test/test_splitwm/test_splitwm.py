@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 """ test_splitwm - perform set of random operations to test splitwm
-    Copyright (C) 2013  Tomas Meszaros [exo at tty dot com]
+    Copyright (C) 2013  Tomas Meszaros [exo at tty dot sk]
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

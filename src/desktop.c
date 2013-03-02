@@ -12,8 +12,6 @@
 #include "draw.h"
 
 
-/** Functions **/
-
 Desktop *get_current_desktop(void)
 {
 	if (views[cv_id].curr_desk == LEFT) {
@@ -27,7 +25,7 @@ Desktop *get_current_desktop(void)
 
 void change_left_desktop(const Arg *arg)
 {
-	/* DBG */	dbg("change_left_desktop(): IN\n");
+	dbg("change_left_desktop(): IN\n");
 	Client *c = NULL;
 	Desktop *d = &views[cv_id].ld[views[cv_id].curr_left_id];
 	Desktop *n = &views[cv_id].ld[arg->i];
@@ -55,13 +53,13 @@ void change_left_desktop(const Arg *arg)
 	}
 
 	focuscurrent();
-	/* DBG */	dbg("change_left_desktop(): OUT\n");
-	/* DBG */	printstatus();
+	dbg("change_left_desktop(): OUT\n");
+	printstatus();
 }
 
 void change_right_desktop(const Arg *arg)
 {
-	/* DBG */	dbg("change_right_desktop(): IN\n");
+	dbg("change_right_desktop(): IN\n");
 	Client *c = NULL;
 	Desktop *d = &views[cv_id].rd[views[cv_id].curr_right_id];
 	Desktop *n = &views[cv_id].rd[arg->i];
@@ -89,13 +87,13 @@ void change_right_desktop(const Arg *arg)
 	}
 
 	focuscurrent();
-	/* DBG */	dbg("change_right_desktop(): OUT\n");
-	/* DBG */	printstatus();
+	dbg("change_right_desktop(): OUT\n");
+	printstatus();
 }
 
 void previous_desktop(const Arg *arg)
 {
-	/* DBG */	dbg("previous_desktop(): IN\n");
+	dbg("previous_desktop(): IN\n");
 	if (views[cv_id].curr_desk == LEFT) {
 		Arg a = { .i = views[cv_id].prev_left_id };
 		change_left_desktop(&a);
@@ -103,12 +101,12 @@ void previous_desktop(const Arg *arg)
 		Arg a = { .i = views[cv_id].prev_right_id };
 		change_right_desktop(&a);
 	}
-	/* DBG */	dbg("previous_desktop(): OUT\n");
+	dbg("previous_desktop(): OUT\n");
 }
 
 void master_size_increase(const Arg *arg)
 {
-	/* DBG */	dbg("MASTER_SIZE_INCrease(): IN\n");
+	dbg("master_size_increase(): IN\n");
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
@@ -117,12 +115,12 @@ void master_size_increase(const Arg *arg)
 		return;
 	d->master_size += MASTER_SIZE_INC;
 	tile(d);
-	/* DBG */	dbg("MASTER_SIZE_INCrease(): OUT\n");
+	dbg("master_size_increase(): OUT\n");
 }
 
 void master_size_decrease(const Arg *arg)
 {
-	/* DBG */	dbg("MASTER_SIZE_DECrease(): IN\n");
+	dbg("master_size_decrease(): IN\n");
 	Desktop *d = NULL;
 	if (!(d = get_current_desktop()))
 		return;
@@ -132,20 +130,19 @@ void master_size_decrease(const Arg *arg)
 		return;
 	d->master_size -= MASTER_SIZE_DEC;
 	tile(d);
-	/* DBG */	dbg("MASTER_SIZE_DECrease(): OUT\n");
+	dbg("master_size_decrease(): OUT\n");
 }
 
 void toggle_float(const Arg *arg)
 {
-	/* DBG */	dbg("toggle_current(): IN\n");
+	dbg("toggle_current(): IN\n");
 	Desktop *d = NULL;
 
 	if (!(d = get_current_desktop()))
 		return;
 	d->tile_or_float = FLOAT;
 	draw();
-	/* DBG */	dbg("toggle_current(): OUT\n");
+	dbg("toggle_current(): OUT\n");
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

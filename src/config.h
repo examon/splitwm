@@ -6,53 +6,182 @@
 #include "view.h"
 
 
-/** Font **/
-#define  FONT	"-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*"
+/******\
+* Font *
+\******/
+
+/**
+ * Default font for the window manager, bar, etc.
+ */
+#define  FONT  "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*"
 
 
-/** Bar **/
-#define  BAR_POSITION	TOP	/* TOP, BOTTOM or NONE */
-#define  CHAR_SPACE	5 	/* spaces between bar tags */
+/*****\
+* Bar *
+\*****/ 
 
-#define  GRID_TILE_TAG		"[grid]"	/* grid tile layout tag shown in bar */
-#define  MASTER_TILE_TAG	"[master]"	/* master tile layout tag shown in bar */
-#define  FLOAT_TAG		"[float]"	/* float tag shown in bar */
+/**
+ * Default bar position.
+ *
+ * Can be changed to:
+ *  - TOP
+ *  - BOTTOM
+ *  - NONE
+ */
+#define  BAR_POSITION  TOP
 
+/**
+ * Spaces between bar tags.
+ */
+#define  CHAR_SPACE  5
 
-/** external bar **/
-#define  EXTERNAL_BAR_POSITION	NONE	/* TOP, BOTTOM or NONE */
-#define  EXTERNAL_BAR_HEIGHT	20	/* external bar height in pixels */
+/**
+ * Grid tile layout string tag shown in the bar.
+ */
+#define  GRID_TILE_TAG  "[grid]"
 
+/**
+ * Master tile layout string tag shown in the bar.
+ */
+#define  MASTER_TILE_TAG  "[master]"
 
-/** Views **/
-static const char *tags_views[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
-#define  DEFAULT_VIEW  1	/* default view */
-
-
-/** Desktops **/
-static const char  *tags_left[]  = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
-static const char  *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };	/* max 9 */
-#define  DEFAULT_LEFT_DESKTOP	1
-#define  DEFAULT_RIGHT_DESKTOP	1
-#define  MASTER_SIZE  		0	/* master window size, if 0 then master_size = screen_width/2 */
-#define  MASTER_SIZE_INC	20 	/* master_size increase distance */
-#define  MASTER_SIZE_DEC	20 	/* master_size decrease distance */
-
-
-/** Window **/
-#define  FOLLOW_MOUSE_FOCUS	True
-#define  BORDER_WIDTH		4	/* window border width */
-#define  BORDER_OFFSET		4	/* spaces betweed windows borders */
-
-
-/** Separator **/
-#define  SHOW_SEPARATOR		True	/* False to hide separator */
-#define  SEPARATOR_WIDTH	4	/* width of the split seperator */
-#define  SEPARATOR_INC		50	/* separator increase distance */
-#define  SEPARATOR_DEC		50	/* separator decrease distance */
+/**
+ * Float layout string tag shown in the bar.
+ */
+#define  FLOAT_TAG  "[float]"
 
 
-/** Colors **/
+/**************\
+* External Bar *
+\**************/
+
+/**
+ * Default position for the external bar.
+ *
+ * Can be changed to:
+ *  - TOP
+ *  - BOTTOM
+ *  - NONE
+ */
+#define  EXTERNAL_BAR_POSITION  NONE
+
+/**
+ * External bar height (in pixels).
+ */
+#define  EXTERNAL_BAR_HEIGHT  20
+
+
+/*******\
+* Views *
+\*******/
+
+/**
+ * Views tag strings.
+ * Can be changed but array must contain max 9 items!
+ */
+static const char *tags_views[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+/**
+ * Default view number.
+ */
+#define  DEFAULT_VIEW  1
+
+
+/**********\
+* Desktops *
+\**********/
+
+/**
+ * Left desktop tag strings.
+ * Can be changed but array must contain max 9 items!
+ */
+static const char  *tags_left[]  = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+/**
+ * Right desktop tag strings.
+ * Can be changed but array must contain max 9 items!
+ */
+static const char  *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+/**
+ * Default left desktop number.
+ */
+#define  DEFAULT_LEFT_DESKTOP  1
+
+/**
+ * Default right desktop number.
+ */
+#define  DEFAULT_RIGHT_DESKTOP  1
+
+/**
+ * Size of the master window in the "master" tile layout (in pixels).
+ *
+ * If MASTER_SIZE == 0, then master size is equal to the half of the screen width.
+ */
+#define  MASTER_SIZE  0
+
+/**
+ * Increase distance (in pixels) when changing master window size.
+ */
+#define  MASTER_SIZE_INC  20
+
+/**
+ * Decrease distance (in pixels) when changing master window size.
+ */
+#define  MASTER_SIZE_DEC  20
+
+
+/********\
+* Window *
+\********/
+
+/**
+ * When True, focus will be automatically given to window when mouse enters it.
+ */
+#define  FOLLOW_MOUSE_FOCUS  True
+
+/**
+ * Window border width (in pixels).
+ */
+#define  BORDER_WIDTH  4
+
+/**
+ * Window border offset (in pixels).
+ *
+ * (spaces between windows borders)
+ */
+#define  BORDER_OFFSET  4
+
+
+/************************\
+* Split Screen Separator *
+\************************/
+
+/**
+ * When True, split screen separator will be visible.
+ */
+#define  SHOW_SEPARATOR  True
+
+/**
+ * Split screen separator width (in pixels).
+ */
+#define  SEPARATOR_WIDTH  4
+
+/**
+ * Split screen separator increase distance (in pixels).
+ */
+#define  SEPARATOR_INC  50
+
+/**
+ * Split screen separator decrease distance (in pixels).
+ */
+#define  SEPARATOR_DEC  50
+
+
+/****************\
+* Default Colors *
+\****************/
+
 #define  FOCUS_COLOR            "#d87a16"
 #define  LEFT_UNFOCUS_COLOR     "#005577"
 #define  RIGHT_UNFOCUS_COLOR    "#288428"
@@ -80,22 +209,63 @@ static const char  *tags_right[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9"
 #define  VIEW_TAG_OCCUPIED_FG   "#bbbbbb"
 
 
-/** Commands **/
+/**********\
+* Commands *
+\**********/
+
 static const char  *spawn_terminal[] = { "urxvt", NULL };
 static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG_COLOR, "-nf", VIEW_TAG_NORMAL_FG, "-sb", BAR_BG_COLOR, "-sf", FOCUS_COLOR, NULL };
 
 
-/** Modifiers **/
-#define MOD1		Mod1Mask	/* ALT key */
-#define MOD4		Mod4Mask	/* Super/Win key */
-#define SHIFT		ShiftMask	/* Shift key */
+/***********\
+* Modifiers *
+\***********/
+
+/**
+ * Alt key
+ */
+#define  MOD1  Mod1Mask
+
+/**
+ * Super/Win key
+ */
+#define  MOD4  Mod4Mask
+
+/**
+ * Shift key
+ */
+#define  SHIFT  ShiftMask
 
 
-/** Cursor **/
-#define CURSOR		XC_left_ptr	/* default cursor */
+/********\
+* Cursor *
+\********/
+
+/**
+ * Default cursor
+ */
+#define  CURSOR  XC_left_ptr
 
 
-/** Anti-multiple paste macro **/
+/*******\
+* Debug *
+\*******/
+
+/**
+ * If True, dbg() function will be enabled.
+ */
+#define  USE_DBG  True
+
+/**
+ * If True, printstatus() function will be enable.
+ */
+#define  USE_PRINTSTATUS  True
+
+
+/***************************\
+* Anti-multiple Paste Macro *
+\***************************/
+
 #define CLIENT_TO_DESKTOP(K, N) \
 	{  MOD1|SHIFT,       K,             client_to_desktop,      { .i = N }}, \
 	{  MOD4|SHIFT,       K,             client_to_desktop,      { .i = N }},
@@ -105,7 +275,13 @@ static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG
 	{  MOD4,             K,             change_view,            { .i = N }},
 
 
-/** Keyboard shortcuts **/
+/********************\
+* Keyboard Shortcuts *
+\********************/
+
+/**
+ * Array containing all keyboard shortcuts that splitwm supports.
+ */
 static Key keys[] = {
 	/* modifier          key            function                argument */
 
@@ -180,9 +356,16 @@ static Key keys[] = {
 };
 
 
-/** Mouse shortcuts **/
+/*****************\
+* Mouse Shortcuts *
+\*****************/
+
+/**
+ * Array containing all mouse events that splitwm supports.
+ */
 static Button buttons[] = {
-	/* event mask        buttoon        function           argument */
+	/* event mask        button        function           argument */
+
 	{  MOD1,             Button1,       mousemove,         { .i = MOVE }},
 	{  MOD1,             Button3,       mousemove,         { .i = RESIZE }},
 	{  MOD4,             Button1,       mousemove,         { .i = MOVE }},
@@ -191,6 +374,5 @@ static Button buttons[] = {
 
 
 #endif /* _CONFIG_H */
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

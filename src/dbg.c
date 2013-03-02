@@ -19,6 +19,8 @@
 
 void dbg(const char *errstr, ...)
 {
+	if (!USE_DBG)
+		return;
 	va_list ap;
 	va_start(ap, errstr);
 	vfprintf(stdout, errstr, ap);
@@ -27,6 +29,8 @@ void dbg(const char *errstr, ...)
 
 void printstatus(void)
 {
+	if (!USE_PRINTSTATUS)
+		return;
 	unsigned int i;
 
 	for (i = 0; i < DESKTOPS_LEFT; i++) {
@@ -69,4 +73,4 @@ void printstatus(void)
 }
 
 
-/* vim: set expandtab ts=8 sts=8 sw=8 : */
+/* vim: set ts=8 sts=8 sw=8 : */

@@ -4,13 +4,17 @@
 #define _DBG_H
 
 
-/** Functions **/
-
+/**
+ * Prints passed argument string to the stdout as a debug message.
+ */
 extern void dbg(const char *errstr, ...);
+
+/**
+ * Prints status of the left & right resktop client list.
+ */
 extern void printstatus(void);
 
 
 #endif /* _DBG_H */
 
-
-/* vim: set expandtab ts=8 sts=8 sw=8 : */
+/* vim: set ts=8 sts=8 sw=8 : */

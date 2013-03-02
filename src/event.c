@@ -16,8 +16,6 @@
 #include "config.h"
 
 
-/** Event handlers **/
-
 void (*events[LASTEvent]) (XEvent *e) = {
 	[ButtonPress]      = buttonpress,
 	[ConfigureNotify]  = configurenotify,
@@ -28,9 +26,6 @@ void (*events[LASTEvent]) (XEvent *e) = {
 	[KeyPress]         = keypress,
 	[MapRequest]       = maprequest
 };
-
-
-/** Functions **/
 
 void buttonpress(XEvent *e)
 {
@@ -237,6 +232,5 @@ void expose(XEvent *e)
 	}
 	dbg("expose(): OUT\n");
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

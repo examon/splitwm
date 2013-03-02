@@ -27,8 +27,6 @@
 #include "config.h"
 
 
-/** Variables **/
-
 int sh;
 int sw;
 int screen;
@@ -46,8 +44,6 @@ unsigned int def_right;
 unsigned int def_view;
 Bool running = True;
 
-
-/** Functions **/
 
 void die(const char *errstr, ...)
 {

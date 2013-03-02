@@ -14,14 +14,10 @@
 #include "dbg.h"
 
 
-/** Variables **/
-
 int cv_id;
 int pv_id;
 View views[13];
 
-
-/** Functions **/
 
 void activate_left_view(const Arg *arg)
 {
@@ -249,6 +245,5 @@ void update_geometry(void)
 		}
 	}
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

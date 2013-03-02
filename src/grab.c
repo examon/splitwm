@@ -13,8 +13,6 @@
 #include "config.h"
 
 
-/* Functions */
-
 void grabkeys(void)
 {
 	unsigned int i;

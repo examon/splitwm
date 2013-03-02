@@ -17,8 +17,6 @@
 #include "config.h"
 
 
-/** Variables **/
-
 int bar_height;
 int bar_y;
 int font_height;
@@ -31,8 +29,6 @@ GC gc;
 Window bar;
 Window separator;
 
-
-/** Functions **/
 
 void prepare_draw(void)
 {
@@ -299,6 +295,5 @@ void draw_tags(void)
 	}
 	dbg("draw_tags(): OUT\n");
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

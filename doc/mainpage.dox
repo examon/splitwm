@@ -1,0 +1,25 @@
+/*! \mainpage
+ *
+ * ## Introduction
+ *
+ *  - WM able to "split" screen into two virtual screens (it can emulate dual screen setup on one physical screen).
+ *
+ *
+ * ## Installation
+ *
+ *  > cd src\n
+ *  > make\n
+ *  > sudo make install\n
+ *
+ * ## Dependences
+ *
+ *  - xlib
+ *
+ * ## Video
+ *
+ *  - Click [here](https://vimeo.com/58112758).
+ *
+ * ## Screenshot
+ *
+ *  - Click [here](https://raw.github.com/examon/splitwm/master/img/demo.png).
+ */

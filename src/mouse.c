@@ -11,7 +11,6 @@
 #include "draw.h"
 #include "event.h"
 
-/** Functions **/
 
 void mousemove(const Arg *arg)
 {
@@ -102,6 +101,5 @@ void mousemove(const Arg *arg)
 	draw();
 	dbg("mousemotion(): OUT\n");
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */

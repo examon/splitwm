@@ -18,8 +18,6 @@
 #include "view.h"
 
 
-/** Functions **/
-
 void kill_client(const Arg *arg)
 {
 	dbg("kill_client(): IN\n");
@@ -71,7 +69,6 @@ void send_kill_signal(Window w)
 void client_to_desktop(const Arg *arg)
 {
 	dbg("client_to_desktop(): IN\n");
-	dbg("client_to_desktop(): %d\n", arg->i);
 	Client *c = NULL;
 	Desktop *d = NULL;
 	int tmp_id;
@@ -159,7 +156,6 @@ void nextwindow(const Arg *arg)
 		}
 	}
 	focuscurrent();
-	//XRaiseWindow(dpy, d->curr->win);
 	dbg("nextwindow(): OUT\n");
 }
 
@@ -294,7 +290,6 @@ void focuscurrent(void)
 	Desktop *d = NULL;
 
 	if (!(d = get_current_desktop())) {
-		dbg("FC 1\n");
 		return;
 	}
 
@@ -333,6 +328,5 @@ void focuscurrent(void)
 	draw();
 	dbg("focuscurrent(): OUT\n");
 }
-
 
 /* vim: set ts=8 sts=8 sw=8 : */
