@@ -1,4 +1,4 @@
-/*! \mainpage
+/*! \mainpage Info
  *
  * ## Introduction
  *
@@ -22,4 +22,8 @@
  * ## Screenshot
  *
  *  - Click [here](https://raw.github.com/examon/splitwm/master/img/demo.png).
+ *
+ * ## Authors
+ *
+ *  > Tomas Meszaros <exo@tty.sk>
  */

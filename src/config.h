@@ -257,7 +257,7 @@ static const char  *spawn_dmenu[]    = { "dmenu_run", "-fn", FONT, "-nb", BAR_BG
 #define  USE_DBG  True
 
 /**
- * If True, printstatus() function will be enable.
+ * If True, printstatus() function will be enabled.
  */
 #define  USE_PRINTSTATUS  True
 
