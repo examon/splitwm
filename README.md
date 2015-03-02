@@ -2,6 +2,14 @@
 
 Window manager able to "split" screen into two virtual screens (it can emulate dual screen setup on one physical screen).
 
+## Video
+
+Click [here](https://vimeo.com/58112758).
+
+## Screenshots
+
+![demo](https://raw.github.com/examon/splitwm/master/img/demo.png)
+
 ## Dependences
 
 In order to run `splitwm`, you will need:
@@ -94,11 +102,3 @@ If you want to send the client from one view to another press:
 
 
 Please check out other keyboard shortcuts and functions in the configuration file `config.h`.
-
-## Video
-
-Click [here](https://vimeo.com/58112758).
-
-## Screenshots
-
-![demo](https://raw.github.com/examon/splitwm/master/img/demo.png)
